@@ -4,8 +4,9 @@ A small, complete RPG in the **HD-2D** style (as in *Octopath Traveler* and *Tri
 pixel-art sprites live in a lit, low-poly 3D diorama, with real-time shadows, bloom,
 SSAO, fog and tilt-shift depth of field.
 
-Every texture and sprite is **generated procedurally at runtime** (see `scripts/gfx/`),
-so the repository contains no binary art assets.
+Every texture, sprite, sound effect and piece of music is **generated procedurally at
+runtime** (see `scripts/view/gfx/` and `scripts/audio/`), so the repository contains no binary
+art or audio assets.
 
 | Exploration | Village | Break & Boost battle |
 |---|---|---|
@@ -41,6 +42,35 @@ The project uses the **Forward+** renderer for depth of field, SSAO and glow.
   - **Boost:** each party member banks a Boost Point (BP) per round, up to 5. Spend up to 3 on an
     action for extra attack hits or much stronger skills.
 - **Goal:** defeat the King Slime in the Old Shrine to the north. It acts twice per turn below half HP.
+
+## Audio
+
+Everything you hear is synthesized when the game starts, by a small chiptune synthesizer
+(`scripts/audio/synth.gd`: pulse, triangle, saw, sine and noise voices with ADSR envelopes,
+vibrato and pitch slides).
+
+- **Music** (`music_library.gd`): seven original tracks written as data (chords per bar, a
+  hand-written melody, and bass, arpeggio and drum patterns): title, field, battle, boss,
+  plus victory, defeat and inn jingles. The loops are rendered seamless on worker threads
+  the first time music is requested, so nothing hitches in play. A little reverb on the
+  Music bus gives them a softer, roomier sound.
+- **Sound effects** (`sfx_library.gd`): UI cursor/confirm/cancel, typewriter blips, hits,
+  weakness hits, the shield break, spells (pitched per element), heals, Boost, knock-outs,
+  level-ups, chests, coins, encounters and fleeing.
+- **Music states**: the `Audio` autoload runs a `StateMachine` of musical situations:
+
+  | State | Track | When it ends |
+  |---|---|---|
+  | `silent` | none (fades out) | — |
+  | `title` | title theme, looping | — |
+  | `field` | field theme, looping, **resumes where it left off** | — |
+  | `battle` / `boss` | battle themes, looping | — |
+  | `victory` | fanfare | hands over to `field` |
+  | `inn` | lullaby (resting at the inn, waking up after a defeat) | hands over to `field` |
+  | `defeat` | lament | goes `silent` |
+
+  Gameplay code only says what is happening (`Audio.set_music(&"battle")`). The state decides
+  the track, the crossfade, and what follows a jingle.
 
 ## How the HD-2D look is built
 
@@ -92,6 +122,7 @@ Patterns used:
 ```
 scenes/main.tscn            Entry scene (scripts/game/flow/main.gd)
 scripts/
+  audio/                    Synth, MusicLibrary (score), SfxLibrary, AudioDirector ("Audio" autoload)
   core/                     StateMachine, State, input bindings
   data/                     battle_data, map_data (ASCII world), story_data (dialogue, shop)
   autoload/game.gd          Party, inventory, gold and story flags ("Game" autoload)
@@ -133,6 +164,13 @@ damage rules, Break & Boost, the actions and 140 simulated AI-vs-AI battles:
 
 ```sh
 godot --headless --path . -s tests/logic_test.gd
+```
+
+Audio test. It renders every track and sound effect, checks their levels and loop modes, and
+walks the music state machine through its jingle hand-overs:
+
+```sh
+godot --headless --path . --fixed-fps 60 -s tests/audio_test.gd
 ```
 
 Headless smoke test. It drives exploration, dialogue, the shop, the inn, chests, the status menu,

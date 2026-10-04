@@ -5,6 +5,9 @@ extends BattleController
 
 signal _target_chosen(result: Variant)
 
+## Each boost level raises the Boost sound by this much (pitch scale).
+const BOOST_PITCH_STEP := 0.15
+
 var view: BattleView
 ## The party member whose command is being chosen (null when not choosing).
 var actor: Combatant
@@ -69,17 +72,19 @@ func handle_input(event: InputEvent) -> bool:
 	if actor == null:
 		return false
 	if event.is_action_pressed("boost_up"):
-		set_boost(boost_level + 1)
+		_change_boost(1)
 		return true
 	if event.is_action_pressed("boost_down"):
-		set_boost(boost_level - 1)
+		_change_boost(-1)
 		return true
 	if not _picking:
 		return false
 	if event.is_action_pressed("accept"):
+		Audio.play_sfx(&"confirm")
 		_end_picking(_targets if _target_all else [_targets[_target_index]])
 		return true
 	if event.is_action_pressed("cancel"):
+		Audio.play_sfx(&"cancel")
 		_end_picking(null)
 		return true
 	if _target_all:
@@ -92,8 +97,20 @@ func handle_input(event: InputEvent) -> bool:
 	if step == 0:
 		return false
 	_target_index = posmod(_target_index + step, _targets.size())
+	Audio.play_sfx(&"cursor")
 	_show_target()
 	return true
+
+
+func _change_boost(delta: int) -> void:
+	var before := boost_level
+	set_boost(boost_level + delta)
+	if boost_level == before:
+		Audio.play_sfx(&"cancel")
+	elif delta > 0:
+		Audio.play_sfx(&"boost", 1.0 + boost_level * BOOST_PITCH_STEP)
+	else:
+		Audio.play_sfx(&"cursor")
 
 
 func _done(action: BattleAction) -> BattleAction:

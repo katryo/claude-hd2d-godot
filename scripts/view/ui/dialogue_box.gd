@@ -7,6 +7,8 @@ signal _advance
 
 # Typewriter
 const CHARS_PER_SEC := 55.0
+## A typewriter blip plays every this many revealed characters.
+const BLIP_EVERY_CHARS := 3
 
 # Message window (offsets from the bottom-centre of the screen)
 const PANEL_ALPHA := 0.9
@@ -152,7 +154,10 @@ func _process(delta: float) -> void:
 	_time += delta
 	if _typing:
 		var total := _text.get_total_character_count()
+		var before := _text.visible_characters
 		_text.visible_characters = min(_text.visible_characters + max(1, int(CHARS_PER_SEC * delta + 0.5)), total)
+		if before / BLIP_EVERY_CHARS != _text.visible_characters / BLIP_EVERY_CHARS:
+			Audio.play_sfx(&"text")
 		if _text.visible_characters >= total:
 			_typing = false
 			_waiting = true
@@ -171,4 +176,5 @@ func _unhandled_input(event: InputEvent) -> void:
 			_waiting = true
 		elif _waiting:
 			_waiting = false
+			Audio.play_sfx(&"cursor")
 			_advance.emit()

@@ -20,6 +20,7 @@ func run(field: Field) -> void:
 		return
 	Game.set_flag(flag)
 	field.view.set_chest_open(_cell)
+	Audio.play_sfx(&"chest")
 	var loot: Dictionary = MapData.CHESTS.get(_cell, StoryData.DEFAULT_CHEST_LOOT)
 	Game.add_item(loot.item, loot.count)
 	await field.dialogue.say("", [StoryData.CHEST_FOUND % [BattleData.ITEMS[loot.item].name, loot.count]])

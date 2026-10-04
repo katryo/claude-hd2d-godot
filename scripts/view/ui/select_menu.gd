@@ -101,17 +101,21 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("accept"):
 		get_viewport().set_input_as_handled()
 		if items.is_empty() or not items[index].get("enabled", true):
+			Audio.play_sfx(&"cancel")
 			return
+		Audio.play_sfx(&"confirm")
 		_choose(index)
 		return
 	elif event.is_action_pressed("cancel") and cancellable:
 		get_viewport().set_input_as_handled()
+		Audio.play_sfx(&"cancel")
 		_choose(-1)
 		return
 	if moved != 0 and not items.is_empty():
 		get_viewport().set_input_as_handled()
 		_labels[index].modulate.a = 1.0
 		index = posmod(index + moved, items.size())
+		Audio.play_sfx(&"cursor")
 		_refresh()
 		hovered.emit(index)
 
