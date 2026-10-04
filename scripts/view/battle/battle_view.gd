@@ -32,6 +32,9 @@ const BREAK_PAUSE := 0.6
 const ACTION_END_PAUSE := 0.3
 ## Reading time for narration-only actions (Defend, Flee).
 const MESSAGE_READ_TIME := 0.75
+# Sound pitch tweaks (pitch scale)
+const SP_RESTORE_PITCH := 1.3
+const REVIVE_PITCH := 0.8
 
 var stage: BattleStage
 var effects: BattleEffects
@@ -131,8 +134,10 @@ func _play_event(e: BattleEvent) -> void:
 		BattleEvent.Type.ACTION_START:
 			var actor := view_of(e.actor)
 			if e.motion == BattleEvent.Motion.LUNGE and e.target:
+				Audio.play_sfx(&"swing")
 				await actor.lunge_toward(view_of(e.target).position())
 			elif e.motion == BattleEvent.Motion.CAST:
+				Audio.play_sfx(&"spell", SfxLibrary.spell_pitch_scale(e.element))
 				effects.burst(actor.position() + CAST_BURST_OFFSET, _spell_element(e.element), CAST_BURST_STRENGTH)
 				await actor.cast_hop()
 		BattleEvent.Type.ACTION_END:
@@ -143,12 +148,14 @@ func _play_event(e: BattleEvent) -> void:
 			var target := view_of(e.target)
 			if e.from_skill:
 				effects.burst(target.position() + BURST_OFFSET, _spell_element(e.element))
+			Audio.play_sfx(&"weak_hit" if e.weak else &"hit")
 			effects.popup(target.position(), str(e.amount), WEAK_HIT_COLOR if e.weak else Color.WHITE, e.weak)
 			target.flash_hit()
 			stage.shake(HIT_SHAKE)
 			await wait(HIT_INTERVAL)
 		BattleEvent.Type.SHIELD_BREAK:
 			var target := view_of(e.target)
+			Audio.play_sfx(&"break")
 			stage.shake(BREAK_SHAKE)
 			effects.break_callout(target.position())
 			effects.burst(target.position() + BURST_OFFSET, "break")
@@ -156,21 +163,26 @@ func _play_event(e: BattleEvent) -> void:
 			await wait(BREAK_PAUSE)
 		BattleEvent.Type.DEFEATED:
 			var target := view_of(e.target)
+			Audio.play_sfx(&"enemy_down" if e.target.is_enemy else &"party_down")
 			if e.target.is_enemy:
 				effects.burst(target.position() + DEATH_BURST_OFFSET, "death")
 			await target.play_defeat()
 		BattleEvent.Type.HEAL:
 			var target := view_of(e.target)
+			Audio.play_sfx(&"heal")
 			effects.burst(target.position() + BURST_OFFSET, "heal")
 			effects.popup(target.position(), str(e.amount), HEAL_POPUP_COLOR)
 			await wait(HEAL_INTERVAL)
 		BattleEvent.Type.SP_RESTORE:
+			Audio.play_sfx(&"heal", SP_RESTORE_PITCH)
 			effects.popup(view_of(e.target).position(), "%d SP" % e.amount, UITheme.SP_COLOR)
 		BattleEvent.Type.BP_GAIN:
 			var target := view_of(e.target)
+			Audio.play_sfx(&"boost")
 			effects.burst(target.position() + BURST_OFFSET, "boost")
 			effects.popup(target.position(), "+%d BP" % e.amount, UITheme.BP_COLOR)
 		BattleEvent.Type.REVIVE:
+			Audio.play_sfx(&"heal", REVIVE_PITCH)
 			view_of(e.target).set_down(false)
 
 
@@ -179,4 +191,5 @@ func _spell_element(element: String) -> String:
 
 
 func celebrate(c: Combatant) -> void:
+	Audio.play_sfx(&"level_up")
 	effects.burst(view_of(c).position() + BURST_OFFSET, "boost")

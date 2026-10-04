@@ -124,6 +124,7 @@ func run_service(service: String, speaker: String) -> void:
 
 
 func _rest() -> void:
+	Audio.set_music(&"inn")
 	await view.fade.fade_out()
 	Game.heal_party()
 	await get_tree().create_timer(REST_HOLD_TIME).timeout
@@ -143,8 +144,10 @@ func _shop(speaker: String) -> void:
 			return
 		match shop.buy(choice, Game):
 			Shop.Result.TOO_POOR:
+				Audio.play_sfx(&"cancel")
 				await dialogue.say(speaker, [StoryData.SHOP_TOO_POOR])
 			Shop.Result.BOUGHT:
+				Audio.play_sfx(&"coin")
 				var id := shop.item_id(choice)
 				await dialogue.say(speaker, [StoryData.SHOP_THANKS % [BattleData.ITEMS[id].name, Game.inventory[id]]])
 		greeting = StoryData.SHOP_AGAIN % Game.gold

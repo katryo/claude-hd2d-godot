@@ -86,6 +86,7 @@ class ResolveAction extends State:
 			if not is_current():
 				return
 		if b.model.outcome == BattleModel.Outcome.FLED:
+			Audio.play_sfx(&"flee")
 			transition_to(&"outcome")
 			return
 		if b.model.grants_extra_action(actor):
@@ -123,6 +124,7 @@ class Outcome extends State:
 class Victory extends State:
 	func enter(_msg: Dictionary = {}) -> void:
 		var b: Battle = host
+		Audio.set_music(&"victory")
 		var rewards := b.model.rewards()
 		b.model.bag.add_gold(rewards.gold)
 		b.view.banner.show_text("VICTORY", "%d EXP   %d G" % [rewards.xp, rewards.gold], Battle.BANNER_TIME)
@@ -140,6 +142,7 @@ class Victory extends State:
 class Defeat extends State:
 	func enter(_msg: Dictionary = {}) -> void:
 		var b: Battle = host
+		Audio.set_music(&"defeat")
 		b.view.banner.show_text("DEFEAT", "The party has fallen...", Battle.BANNER_TIME)
 		await b.view.wait(Battle.DEFEAT_WAIT)
 		if is_current():
