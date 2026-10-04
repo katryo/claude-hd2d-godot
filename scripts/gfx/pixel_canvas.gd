@@ -2,6 +2,24 @@ class_name PixelCanvas
 extends RefCounted
 ## Small helper for drawing pixel art into an Image at runtime.
 
+# Colors & alpha
+const TRANSPARENT := Color(0, 0, 0, 0)
+## Pixels with alpha at or below this count as empty.
+const ALPHA_EPSILON := 0.01
+
+# shade_ellipse(): light direction weights and the band where the mid tone sits.
+const SHADE_DIR_X := 0.45
+const SHADE_DIR_Y := 0.9
+const SHADE_BAND := 0.45
+
+# auto_shade() defaults
+const AUTO_SHADE_DARK := 0.22
+const AUTO_SHADE_LIGHT := 0.12
+
+# Neighbor offsets used by outline()
+const ORTHOGONAL_NEIGHBORS := [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
+const DIAGONAL_NEIGHBORS := [Vector2i(1, 1), Vector2i(-1, -1), Vector2i(-1, 1), Vector2i(1, -1)]
+
 var image: Image
 var width: int
 var height: int
@@ -11,7 +29,7 @@ func _init(w: int, h: int) -> void:
 	width = w
 	height = h
 	image = Image.create(w, h, false, Image.FORMAT_RGBA8)
-	image.fill(Color(0, 0, 0, 0))
+	image.fill(TRANSPARENT)
 
 
 func px(x: int, y: int, c: Color) -> void:
@@ -21,12 +39,12 @@ func px(x: int, y: int, c: Color) -> void:
 
 func get_px(x: int, y: int) -> Color:
 	if x < 0 or y < 0 or x >= width or y >= height:
-		return Color(0, 0, 0, 0)
+		return TRANSPARENT
 	return image.get_pixel(x, y)
 
 
 func is_filled(x: int, y: int) -> bool:
-	return get_px(x, y).a > 0.01
+	return get_px(x, y).a > ALPHA_EPSILON
 
 
 func rect(x: int, y: int, w: int, h: int, c: Color) -> void:
@@ -82,10 +100,10 @@ func shade_ellipse(cx: float, cy: float, rx: float, ry: float, light: Color, mid
 			if nx * nx + ny * ny > 1.0:
 				continue
 			# Light comes from the upper left.
-			var t := (nx * 0.45 + ny * 0.9)
-			if t < -0.45:
+			var t := (nx * SHADE_DIR_X + ny * SHADE_DIR_Y)
+			if t < -SHADE_BAND:
 				px(x, y, light)
-			elif t > 0.45:
+			elif t > SHADE_BAND:
 				px(x, y, dark)
 			else:
 				px(x, y, mid)
@@ -96,15 +114,15 @@ func outline(c: Color, diagonal: bool = false) -> void:
 	var src := image.duplicate() as Image
 	for y in height:
 		for x in width:
-			if src.get_pixel(x, y).a > 0.01:
+			if src.get_pixel(x, y).a > ALPHA_EPSILON:
 				continue
 			var hit := false
-			for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			for d in ORTHOGONAL_NEIGHBORS:
 				if _src_filled(src, x + d.x, y + d.y):
 					hit = true
 					break
 			if not hit and diagonal:
-				for d in [Vector2i(1, 1), Vector2i(-1, -1), Vector2i(-1, 1), Vector2i(1, -1)]:
+				for d in DIAGONAL_NEIGHBORS:
 					if _src_filled(src, x + d.x, y + d.y):
 						hit = true
 						break
@@ -114,12 +132,12 @@ func outline(c: Color, diagonal: bool = false) -> void:
 
 ## Darkens the right-most/bottom pixels and lightens the top-left edge of each shape
 ## to give flat-colored sprites a little volume.
-func auto_shade(dark_amount: float = 0.22, light_amount: float = 0.12) -> void:
+func auto_shade(dark_amount: float = AUTO_SHADE_DARK, light_amount: float = AUTO_SHADE_LIGHT) -> void:
 	var src := image.duplicate() as Image
 	for y in height:
 		for x in width:
 			var c := src.get_pixel(x, y)
-			if c.a < 0.01:
+			if c.a < ALPHA_EPSILON:
 				continue
 			var right_empty := not _src_filled(src, x + 1, y)
 			var below_empty := not _src_filled(src, x, y + 1)
@@ -135,7 +153,7 @@ func blit(other: PixelCanvas, ox: int, oy: int, flip_h: bool = false) -> void:
 	for y in other.height:
 		for x in other.width:
 			var c := other.image.get_pixel(x, y)
-			if c.a < 0.01:
+			if c.a < ALPHA_EPSILON:
 				continue
 			var tx := ox + (other.width - 1 - x if flip_h else x)
 			px(tx, oy + y, c)
@@ -148,4 +166,4 @@ func to_texture() -> ImageTexture:
 func _src_filled(src: Image, x: int, y: int) -> bool:
 	if x < 0 or y < 0 or x >= width or y >= height:
 		return false
-	return src.get_pixel(x, y).a > 0.01
+	return src.get_pixel(x, y).a > ALPHA_EPSILON
