@@ -14,7 +14,7 @@ art or audio assets.
 
 ## Running
 
-1. Install [Godot 4.3+](https://godotengine.org/download) (standard build; no C#/.NET needed).
+1. Install [Godot 4.7+](https://godotengine.org/download) (standard build; no C#/.NET needed).
 2. Open `project.godot` in the editor and press **F5**, or run `godot --path .`.
 
 The project uses the **Forward+** renderer for depth of field, SSAO and glow.
