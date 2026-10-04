@@ -5,6 +5,75 @@ extends Node3D
 
 signal battle_requested(enemy_ids: Array, is_boss: bool)
 
+# HUD / status window
+const UI_LAYER := 2
+const HUD_GOLD_POSITION := Vector2(24, 18)
+## Offset from the bottom-left corner.
+const HINT_POSITION := Vector2(24, -34)
+const STATUS_HALF_WIDTH := 380
+const STATUS_HALF_HEIGHT := 230
+const STATUS_SEPARATION := 10
+const STATUS_ROW_SEPARATION := 26
+const STATUS_NAME_MIN_SIZE := Vector2(90, 0)
+
+# Camera bounds (world units inset from the map edges)
+const CAMERA_MARGIN_X := 9.0
+const CAMERA_MARGIN_TOP := 4.0
+const CAMERA_MARGIN_BOTTOM := 3.0
+
+# Ambient motes around the player
+const MOTES_EXTENTS := Vector3(12, 2.5, 9)
+const MOTES_OFFSET := Vector3(0, 1.5, -2)
+
+# Street lamp flicker: two summed sine waves
+const LAMP_FLICKER_FREQ_A := 9.0
+## Per-lamp phase step so neighbouring lamps don't flicker in sync.
+const LAMP_FLICKER_PHASE_A := 1.7
+const LAMP_FLICKER_AMP_A := 0.08
+const LAMP_FLICKER_FREQ_B := 23.0
+const LAMP_FLICKER_AMP_B := 0.05
+
+# Boss on the overworld
+const BOSS_COLLIDER_RADIUS := 1.1
+const BOSS_COLLIDER_HEIGHT := 2.0
+const BOSS_COLLIDER_OFFSET := Vector3(0, 1, 0)
+const BOSS_SPRITE_FRAMES := 2
+const BOSS_PIXEL_SIZE := 1.0 / 16.0 * 2.2
+const BOSS_SPRITE_OFFSET := Vector2(0, 12)
+const BOSS_ANIM_FPS := 2.0
+const BOSS_GLOW_COLOR := Color(0.5, 0.6, 1.0)
+const BOSS_GLOW_ENERGY := 1.5
+const BOSS_GLOW_RANGE := 5.0
+const BOSS_GLOW_OFFSET := Vector3(0, 1.0, 1.2)
+const VICTORY_BANNER_HOLD := 2.5
+
+# Interaction
+const INTERACT_REACH := 1.6
+## The boss is large, so it can be reached from further away.
+const BOSS_EXTRA_REACH := 1.0
+## Beyond this distance the player must be facing the target...
+const INTERACT_FACING_MIN_DIST := 0.3
+## ...with at least this dot product between facing and direction to target.
+const INTERACT_FACING_DOT := 0.45
+const CHEST_OPEN_FRAME := 1
+const DEFAULT_CHEST_LOOT := {"item": "potion", "count": 1}
+
+# Inn
+## Starts as transparent black and fades in over the screen while resting.
+const REST_FADE_COLOR := Color(0, 0, 0, 0)
+const REST_FADE_TIME := 0.6
+const REST_HOLD_TIME := 0.7
+## Where the party wakes up after losing a battle.
+const INN_RESPAWN_CELL := Vector2i(8, 26)
+
+# Shop: [item id, price in gold]
+const STOCK := [["potion", 20], ["ether", 40], ["feather", 80]]
+
+# Random encounters (distance walked in tall grass)
+const INITIAL_ENCOUNTER_THRESHOLD := 10.0
+const ENCOUNTER_THRESHOLD_MIN := 7.0
+const ENCOUNTER_THRESHOLD_MAX := 15.0
+
 var builder := WorldBuilder.new()
 var player: Player
 var camera: FollowCamera
@@ -19,7 +88,7 @@ var hud_gold: Label
 
 var busy := false
 var _encounter_meter := 0.0
-var _encounter_threshold := 10.0
+var _encounter_threshold := INITIAL_ENCOUNTER_THRESHOLD
 var _time := 0.0
 var _lamp_base := []
 var _rng := RandomNumberGenerator.new()
@@ -44,13 +113,14 @@ func _ready() -> void:
 	camera = FollowCamera.new()
 	camera.target = player
 	camera.attributes = Visuals.make_camera_attributes(camera.distance)
-	camera.bounds = Rect2(9.0, 4.0, MapData.width() - 18.0, MapData.depth() - 7.0)
+	camera.bounds = Rect2(CAMERA_MARGIN_X, CAMERA_MARGIN_TOP,
+		MapData.width() - CAMERA_MARGIN_X * 2, MapData.depth() - CAMERA_MARGIN_TOP - CAMERA_MARGIN_BOTTOM)
 	add_child(camera)
 	camera.current = true
 	camera.snap()
 
-	var motes := Visuals.make_motes(Vector3(12, 2.5, 9))
-	motes.position = Vector3(0, 1.5, -2)
+	var motes := Visuals.make_motes(MOTES_EXTENTS)
+	motes.position = MOTES_OFFSET
 	player.add_child(motes)
 
 	for data in MapData.NPCS:
@@ -64,7 +134,7 @@ func _ready() -> void:
 		_spawn_boss()
 	for cell in builder.chests:
 		if Game.has_flag(_chest_flag(cell)):
-			builder.chests[cell].frame = 1
+			builder.chests[cell].frame = CHEST_OPEN_FRAME
 
 	_build_ui()
 	_new_encounter_threshold()
@@ -72,7 +142,7 @@ func _ready() -> void:
 
 func _build_ui() -> void:
 	ui = CanvasLayer.new()
-	ui.layer = 2
+	ui.layer = UI_LAYER
 	add_child(ui)
 	var root := Control.new()
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -80,12 +150,12 @@ func _build_ui() -> void:
 	root.theme = UITheme.get_theme()
 	ui.add_child(root)
 
-	hud_gold = UITheme.label("", 20, UITheme.GOLD)
-	hud_gold.position = Vector2(24, 18)
+	hud_gold = UITheme.label("", UITheme.FONT_MEDIUM, UITheme.GOLD)
+	hud_gold.position = HUD_GOLD_POSITION
 	root.add_child(hud_gold)
-	var hint := UITheme.label("WASD/Arrows: Move   Shift: Run   Z/Enter: Talk   Tab: Status", 16, UITheme.DIM)
+	var hint := UITheme.label("WASD/Arrows: Move   Shift: Run   Z/Enter: Talk   Tab: Status", UITheme.FONT_XSMALL, UITheme.DIM)
 	hint.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	hint.position = Vector2(24, -34)
+	hint.position = HINT_POSITION
 	hint.anchor_top = 1.0
 	hint.anchor_bottom = 1.0
 	root.add_child(hint)
@@ -95,10 +165,10 @@ func _build_ui() -> void:
 	status_panel.anchor_right = 0.5
 	status_panel.anchor_top = 0.5
 	status_panel.anchor_bottom = 0.5
-	status_panel.offset_left = -380
-	status_panel.offset_right = 380
-	status_panel.offset_top = -230
-	status_panel.offset_bottom = 230
+	status_panel.offset_left = -STATUS_HALF_WIDTH
+	status_panel.offset_right = STATUS_HALF_WIDTH
+	status_panel.offset_top = -STATUS_HALF_HEIGHT
+	status_panel.offset_bottom = STATUS_HALF_HEIGHT
 	status_panel.visible = false
 	root.add_child(status_panel)
 
@@ -113,27 +183,27 @@ func _spawn_boss() -> void:
 	boss = StaticBody3D.new()
 	boss.position = MapData.cell_center(cell)
 	var shape := CylinderShape3D.new()
-	shape.radius = 1.1
-	shape.height = 2.0
+	shape.radius = BOSS_COLLIDER_RADIUS
+	shape.height = BOSS_COLLIDER_HEIGHT
 	var cs := CollisionShape3D.new()
 	cs.shape = shape
-	cs.position = Vector3(0, 1, 0)
+	cs.position = BOSS_COLLIDER_OFFSET
 	boss.add_child(cs)
 	boss_sprite = Sprite3D.new()
 	boss_sprite.texture = SpriteFactory.enemy_sheet("king_slime")
-	boss_sprite.hframes = 2
-	boss_sprite.pixel_size = 1.0 / 16.0 * 2.2
-	boss_sprite.offset = Vector2(0, 12)
+	boss_sprite.hframes = BOSS_SPRITE_FRAMES
+	boss_sprite.pixel_size = BOSS_PIXEL_SIZE
+	boss_sprite.offset = BOSS_SPRITE_OFFSET
 	boss_sprite.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
 	boss_sprite.shaded = true
 	boss_sprite.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
 	boss_sprite.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
 	boss.add_child(boss_sprite)
 	var glow := OmniLight3D.new()
-	glow.light_color = Color(0.5, 0.6, 1.0)
-	glow.light_energy = 1.5
-	glow.omni_range = 5.0
-	glow.position = Vector3(0, 1.0, 1.2)
+	glow.light_color = BOSS_GLOW_COLOR
+	glow.light_energy = BOSS_GLOW_ENERGY
+	glow.omni_range = BOSS_GLOW_RANGE
+	glow.position = BOSS_GLOW_OFFSET
 	boss.add_child(glow)
 	add_child(boss)
 
@@ -154,10 +224,11 @@ func show_location_banner() -> void:
 func _process(delta: float) -> void:
 	_time += delta
 	for i in builder.lamps.size():
-		var flicker := sin(_time * 9.0 + i * 1.7) * 0.08 + sin(_time * 23.0 + i) * 0.05
+		var flicker := sin(_time * LAMP_FLICKER_FREQ_A + i * LAMP_FLICKER_PHASE_A) * LAMP_FLICKER_AMP_A \
+			+ sin(_time * LAMP_FLICKER_FREQ_B + i) * LAMP_FLICKER_AMP_B
 		builder.lamps[i].light_energy = _lamp_base[i] * (1.0 + flicker)
 	if boss_sprite:
-		boss_sprite.frame = int(_time * 2.0) % 2
+		boss_sprite.frame = int(_time * BOSS_ANIM_FPS) % BOSS_SPRITE_FRAMES
 	hud_gold.text = "%d G" % Game.gold
 	var target = _find_interactable()
 	for npc in npcs:
@@ -190,7 +261,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _find_interactable() -> Variant:
 	var best: Variant = null
-	var best_dist := 1.6
+	var best_dist := INTERACT_REACH
 	var facing := player.facing_vector3()
 	var candidates := []
 	for npc in npcs:
@@ -204,11 +275,11 @@ func _find_interactable() -> Variant:
 	for c in candidates:
 		var d: Vector3 = c[1] - player.global_position
 		d.y = 0
-		var reach := best_dist + (1.0 if is_same(c[0], boss) else 0.0)
+		var reach := best_dist + (BOSS_EXTRA_REACH if is_same(c[0], boss) else 0.0)
 		var dist := d.length()
 		if dist > reach:
 			continue
-		if dist > 0.3 and facing.dot(d.normalized()) < 0.45:
+		if dist > INTERACT_FACING_MIN_DIST and facing.dot(d.normalized()) < INTERACT_FACING_DOT:
 			continue
 		if dist < reach:
 			best = c[0]
@@ -295,37 +366,36 @@ func _talk_to(npc: NPC) -> void:
 
 func _rest() -> void:
 	var fade := ColorRect.new()
-	fade.color = Color(0, 0, 0, 0)
+	fade.color = REST_FADE_COLOR
 	fade.set_anchors_preset(Control.PRESET_FULL_RECT)
 	ui.add_child(fade)
 	var tw := create_tween()
-	tw.tween_property(fade, "color:a", 1.0, 0.6)
+	tw.tween_property(fade, "color:a", 1.0, REST_FADE_TIME)
 	await tw.finished
 	Game.heal_party()
-	await get_tree().create_timer(0.7).timeout
+	await get_tree().create_timer(REST_HOLD_TIME).timeout
 	tw = create_tween()
-	tw.tween_property(fade, "color:a", 0.0, 0.6)
+	tw.tween_property(fade, "color:a", 0.0, REST_FADE_TIME)
 	await tw.finished
 	fade.queue_free()
 
 
 func _shop(n: String) -> void:
-	var stock := [["potion", 20], ["ether", 40], ["feather", 80]]
 	var first := true
 	while true:
 		var choices := []
-		for entry in stock:
+		for entry in STOCK:
 			choices.append("%s  (%d G)" % [BattleData.ITEMS[entry[0]].name, entry[1]])
 		choices.append("Leave")
 		var greeting := "Welcome! Have a look - finest curatives this side of the river." if first \
 			else "Anything else? You have %d G." % Game.gold
 		first = false
 		var choice := await dialogue.say(n, [greeting], choices)
-		if choice < 0 or choice >= stock.size():
+		if choice < 0 or choice >= STOCK.size():
 			await dialogue.say(n, ["Safe travels!"])
 			return
-		var item_id: String = stock[choice][0]
-		var price: int = stock[choice][1]
+		var item_id: String = STOCK[choice][0]
+		var price: int = STOCK[choice][1]
 		if Game.gold < price:
 			await dialogue.say(n, ["Ah... you're a little short on coin, friend."])
 		else:
@@ -345,8 +415,8 @@ func _open_chest(cell: Vector2i) -> void:
 		await dialogue.say("", ["The chest is empty."])
 		return
 	Game.set_flag(flag)
-	builder.chests[cell].frame = 1
-	var loot: Dictionary = MapData.CHESTS.get(cell, {"item": "potion", "count": 1})
+	builder.chests[cell].frame = CHEST_OPEN_FRAME
+	var loot: Dictionary = MapData.CHESTS.get(cell, DEFAULT_CHEST_LOOT)
 	Game.add_item(loot.item, loot.count)
 	await dialogue.say("", ["Found [color=#ffd36b]%s x%d[/color]!" % [BattleData.ITEMS[loot.item].name, loot.count]])
 
@@ -367,31 +437,31 @@ func _open_status() -> void:
 	for child in status_panel.get_children():
 		child.queue_free()
 	var vb := VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 10)
+	vb.add_theme_constant_override("separation", STATUS_SEPARATION)
 	status_panel.add_child(vb)
-	vb.add_child(UITheme.label("Party", 28, UITheme.GOLD))
+	vb.add_child(UITheme.label("Party", UITheme.FONT_HEADING, UITheme.GOLD))
 	for m in Game.party:
 		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 26)
-		var name_l := UITheme.label(m.display_name, 24)
-		name_l.custom_minimum_size = Vector2(90, 0)
+		row.add_theme_constant_override("separation", STATUS_ROW_SEPARATION)
+		var name_l := UITheme.label(m.display_name, UITheme.FONT_LARGE)
+		name_l.custom_minimum_size = STATUS_NAME_MIN_SIZE
 		row.add_child(name_l)
-		row.add_child(UITheme.label("Lv %d" % m.level, 22, UITheme.GOLD))
-		row.add_child(UITheme.label("HP %d/%d" % [m.hp, m.max_hp], 22, UITheme.HP_COLOR))
-		row.add_child(UITheme.label("SP %d/%d" % [m.sp, m.max_sp], 22, UITheme.SP_COLOR))
-		row.add_child(UITheme.label("ATK %d  MAG %d  DEF %d  SPD %d" % [m.atk, m.mag, m.def, m.spd], 18, UITheme.DIM))
+		row.add_child(UITheme.label("Lv %d" % m.level, UITheme.FONT_BODY, UITheme.GOLD))
+		row.add_child(UITheme.label("HP %d/%d" % [m.hp, m.max_hp], UITheme.FONT_BODY, UITheme.HP_COLOR))
+		row.add_child(UITheme.label("SP %d/%d" % [m.sp, m.max_sp], UITheme.FONT_BODY, UITheme.SP_COLOR))
+		row.add_child(UITheme.label("ATK %d  MAG %d  DEF %d  SPD %d" % [m.atk, m.mag, m.def, m.spd], UITheme.FONT_SMALL, UITheme.DIM))
 		vb.add_child(row)
 	vb.add_child(HSeparator.new())
-	vb.add_child(UITheme.label("Items", 28, UITheme.GOLD))
+	vb.add_child(UITheme.label("Items", UITheme.FONT_HEADING, UITheme.GOLD))
 	for id in Game.inventory:
 		if Game.inventory[id] > 0:
 			vb.add_child(UITheme.label("%s  x%d   - %s" % [BattleData.ITEMS[id].name, Game.inventory[id],
-				BattleData.ITEMS[id].desc], 20))
+				BattleData.ITEMS[id].desc], UITheme.FONT_MEDIUM))
 	vb.add_child(HSeparator.new())
-	vb.add_child(UITheme.label("Gold: %d G" % Game.gold, 22, UITheme.GOLD))
+	vb.add_child(UITheme.label("Gold: %d G" % Game.gold, UITheme.FONT_BODY, UITheme.GOLD))
 	var objective := "Defeat the King Slime in the Old Shrine (north)." if not Game.has_flag("boss_defeated") \
 		else "Peace has returned to Lumen Hollow."
-	vb.add_child(UITheme.label("Goal: " + objective, 20, UITheme.TEXT))
+	vb.add_child(UITheme.label("Goal: " + objective, UITheme.FONT_MEDIUM, UITheme.TEXT))
 	status_panel.visible = true
 
 
@@ -401,7 +471,7 @@ func _open_status() -> void:
 
 func _new_encounter_threshold() -> void:
 	_encounter_meter = 0.0
-	_encounter_threshold = _rng.randf_range(7.0, 15.0)
+	_encounter_threshold = _rng.randf_range(ENCOUNTER_THRESHOLD_MIN, ENCOUNTER_THRESHOLD_MAX)
 
 
 func _on_player_moved(distance: float) -> void:
@@ -433,7 +503,7 @@ func on_battle_finished(result: String, was_boss: bool) -> void:
 	camera.snap()
 	if result == "lose":
 		Game.heal_party()
-		player.global_position = MapData.cell_center(Vector2i(8, 26))
+		player.global_position = MapData.cell_center(INN_RESPAWN_CELL)
 		player.sprite.facing = CharacterSprite.Facing.DOWN
 		camera.snap()
 		busy = true
@@ -449,7 +519,7 @@ func on_battle_finished(result: String, was_boss: bool) -> void:
 			boss = null
 			boss_sprite = null
 		busy = true
-		await banner.show_text("The Shrine is Cleansed", "Peace returns to Lumen Hollow", 2.5)
+		await banner.show_text("The Shrine is Cleansed", "Peace returns to Lumen Hollow", VICTORY_BANNER_HOLD)
 		await dialogue.say("", [
 			"With the King Slime defeated, warm light spills from the Old Shrine across the meadow.",
 			"Thank you for playing! Feel free to keep exploring and battling in the tall grass.",

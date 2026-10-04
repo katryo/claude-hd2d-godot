@@ -83,6 +83,12 @@ const CHESTS := {
 
 const SOLID := "^#wTPorFLWh~"
 
+# Terrain heights (world units)
+const CLIFF_HEIGHT := 3.0
+const LOW_CLIFF_HEIGHT := 2.0
+const RIVER_BED_HEIGHT := -0.3
+const GROUND_HEIGHT := 0.0
+
 
 static func width() -> int:
 	return ROWS[0].length()
@@ -100,10 +106,10 @@ static func cell(x: int, y: int) -> String:
 
 static func height_of(c: String) -> float:
 	match c:
-		"^": return 3.0
-		"#": return 2.0
-		"~": return -0.3
-	return 0.0
+		"^": return CLIFF_HEIGHT
+		"#": return LOW_CLIFF_HEIGHT
+		"~": return RIVER_BED_HEIGHT
+	return GROUND_HEIGHT
 
 
 static func find(ch: String) -> Vector2i:

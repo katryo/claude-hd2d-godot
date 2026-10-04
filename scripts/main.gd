@@ -1,6 +1,26 @@
 extends Node
 ## Game flow: title screen -> exploration <-> battles, with screen transitions.
 
+# Screen transitions (seconds)
+const TRANSITION_LAYER := 50
+const TRANSITION_TO_BATTLE := 0.55
+## Used for revealing a battle, hiding it again and revealing the field.
+const TRANSITION_DURATION := 0.5
+
+# Title screen
+const TITLE_SHADE_COLOR := Color(0.03, 0.03, 0.1, 0.35)
+const TITLE_SEPARATION := 10
+const TITLE_SHADOW_OFFSET := 4
+const TITLE_SPACER_SIZE := Vector2(0, 60)
+const TITLE_FADE_OUT := 0.8
+## The "Press Z" prompt pulses between this alpha and fully opaque.
+const PROMPT_BLINK_ALPHA := 0.25
+const PROMPT_BLINK_TIME := 0.9
+
+# Developer flags
+const DEFAULT_SHOT_DELAY := 3.0
+const DEV_BATTLE_ENEMIES := ["slime", "bat", "mushroom"]
+
 var field: Field
 var battle: Battle
 var transition: ColorRect
@@ -15,7 +35,7 @@ func _ready() -> void:
 	add_child(Visuals.make_vignette())
 
 	var tlayer := CanvasLayer.new()
-	tlayer.layer = 50
+	tlayer.layer = TRANSITION_LAYER
 	add_child(tlayer)
 	transition = ColorRect.new()
 	transition.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -50,34 +70,34 @@ func _build_title(layer: CanvasLayer) -> void:
 	layer.add_child(title)
 	var shade := ColorRect.new()
 	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
-	shade.color = Color(0.03, 0.03, 0.1, 0.35)
+	shade.color = TITLE_SHADE_COLOR
 	title.add_child(shade)
 	var box := VBoxContainer.new()
 	box.set_anchors_preset(Control.PRESET_FULL_RECT)
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	box.add_theme_constant_override("separation", 10)
+	box.add_theme_constant_override("separation", TITLE_SEPARATION)
 	title.add_child(box)
-	var t1 := UITheme.label("LUMEN HOLLOW", 76, UITheme.TEXT)
+	var t1 := UITheme.label("LUMEN HOLLOW", UITheme.FONT_TITLE, UITheme.TEXT)
 	t1.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	t1.add_theme_constant_override("shadow_offset_x", 4)
-	t1.add_theme_constant_override("shadow_offset_y", 4)
+	t1.add_theme_constant_override("shadow_offset_x", TITLE_SHADOW_OFFSET)
+	t1.add_theme_constant_override("shadow_offset_y", TITLE_SHADOW_OFFSET)
 	box.add_child(t1)
-	var t2 := UITheme.label("~ An HD-2D Tale ~", 28, UITheme.GOLD)
+	var t2 := UITheme.label("~ An HD-2D Tale ~", UITheme.FONT_HEADING, UITheme.GOLD)
 	t2.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(t2)
 	var spacer := Control.new()
-	spacer.custom_minimum_size = Vector2(0, 60)
+	spacer.custom_minimum_size = TITLE_SPACER_SIZE
 	box.add_child(spacer)
-	var t3 := UITheme.label("Press Z / Enter to begin", 24, UITheme.TEXT)
+	var t3 := UITheme.label("Press Z / Enter to begin", UITheme.FONT_LARGE, UITheme.TEXT)
 	t3.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	t3.name = "Prompt"
 	box.add_child(t3)
-	var t4 := UITheme.label("Move: WASD / Arrows    Confirm: Z / Enter    Cancel: X / Esc    Boost: E / Q", 18, UITheme.DIM)
+	var t4 := UITheme.label("Move: WASD / Arrows    Confirm: Z / Enter    Cancel: X / Esc    Boost: E / Q", UITheme.FONT_SMALL, UITheme.DIM)
 	t4.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(t4)
 	var tw := t3.create_tween().set_loops()
-	tw.tween_property(t3, "modulate:a", 0.25, 0.9)
-	tw.tween_property(t3, "modulate:a", 1.0, 0.9)
+	tw.tween_property(t3, "modulate:a", PROMPT_BLINK_ALPHA, PROMPT_BLINK_TIME)
+	tw.tween_property(t3, "modulate:a", 1.0, PROMPT_BLINK_TIME)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -91,7 +111,7 @@ func _start_game() -> void:
 		return
 	_in_title = false
 	var tw := title.create_tween()
-	tw.tween_property(title, "modulate:a", 0.0, 0.8)
+	tw.tween_property(title, "modulate:a", 0.0, TITLE_FADE_OUT)
 	tw.tween_callback(title.queue_free)
 	field.set_controls(true)
 	field.show_location_banner()
@@ -111,7 +131,7 @@ func _transition(to: float, duration: float) -> void:
 
 func _on_battle_requested(enemy_ids: Array, is_boss: bool) -> void:
 	_was_boss = is_boss
-	await _transition(1.0, 0.55)
+	await _transition(1.0, TRANSITION_TO_BATTLE)
 	remove_child(field)
 	battle = Battle.new()
 	battle.name = "Battle"
@@ -120,18 +140,18 @@ func _on_battle_requested(enemy_ids: Array, is_boss: bool) -> void:
 	battle.finished.connect(_on_battle_finished)
 	add_child(battle)
 	await get_tree().process_frame
-	await _transition(0.0, 0.5)
+	await _transition(0.0, TRANSITION_DURATION)
 
 
 func _on_battle_finished(result: String) -> void:
-	await _transition(1.0, 0.5)
+	await _transition(1.0, TRANSITION_DURATION)
 	battle.queue_free()
 	battle = null
 	add_child(field)
 	field.on_battle_finished(result, _was_boss)
 	print("[main] back on the field (result: %s)" % result)
 	await get_tree().process_frame
-	await _transition(0.0, 0.5)
+	await _transition(0.0, TRANSITION_DURATION)
 
 
 ## Developer flags (after `--` on the command line):
@@ -145,11 +165,11 @@ func _handle_dev_args() -> void:
 	if args.has("--skip-title") or args.has("--battle") or args.has("--boss"):
 		_start_game()
 	if args.has("--battle"):
-		field._start_battle(["slime", "bat", "mushroom"], false)
+		field._start_battle(DEV_BATTLE_ENEMIES.duplicate(), false)
 	elif args.has("--boss"):
 		field._start_battle(["king_slime"], true)
 	var shot := ""
-	var delay := 3.0
+	var delay := DEFAULT_SHOT_DELAY
 	for a in args:
 		if a.begins_with("--shot="):
 			shot = a.trim_prefix("--shot=")
