@@ -11,6 +11,173 @@ const WATER_LEVEL := -0.14
 ## The ground plane around the map sits below the river so it never covers the water.
 const SKIRT_LEVEL := -0.4
 const ROOFS := ["roof_red", "roof_blue", "roof_green", "roof_brown"]
+## Seed for all layout randomness (UV flips, foliage, outer forest).
+const RNG_SEED := 20240917
+
+# Terrain
+## Low-frequency noise that picks dark grass patches.
+const GRASS_NOISE_FREQ_X := 0.35
+const GRASS_NOISE_PHASE_X := 1.3
+const GRASS_NOISE_FREQ_Y := 0.42
+const GRASS_NOISE_FREQ_DIAG := 0.17
+const DARK_GRASS_THRESHOLD := 1.1
+## Max random quarter-turns applied to a tile's UVs.
+const UV_MAX_ROTATIONS := 3
+## Side faces are split into segments of this height (one texture repeat each).
+const SIDE_SEGMENT_HEIGHT := 1.0
+const SIDE_EPSILON := 0.001
+const SKIRT_SIZE := 140.0
+
+# Collision
+const COLLIDER_HEIGHT := 4.0
+const COLLIDER_CENTER_Y := 1.0
+
+# Houses
+## Thickness of the strip under the eaves.
+const EAVE_THICKNESS := 0.12
+## Doors/windows float this far in front of the wall to avoid z-fighting.
+const DECAL_WALL_OFFSET := 0.02
+const WINDOW_HEIGHT := 0.85
+const DECAL_ROUGHNESS := 0.9
+const WINDOW_EMISSION := Color(1.0, 0.75, 0.4)
+const WINDOW_EMISSION_ENERGY := 0.9
+## Every Nth house gets a chimney.
+const CHIMNEY_EVERY := 2
+const CHIMNEY_SIZE := Vector3(0.45, 1.1, 0.45)
+## Distance of the chimney from the east wall.
+const CHIMNEY_INSET_X := 1.0
+## Chimney position along the house depth (0 = north wall, 1 = south wall).
+const CHIMNEY_DEPTH_FRACTION := 0.3
+## Chimney base height as a fraction of the roof rise, plus a fixed lift.
+const CHIMNEY_RISE_FRACTION := 0.55
+const CHIMNEY_LIFT := 0.35
+const SMOKE_EMIT_OFFSET := Vector3(0, 0.6, 0)
+
+# Chimney smoke
+const SMOKE_AMOUNT := 14
+const SMOKE_LIFETIME := 3.5
+const SMOKE_PUFF_SIZE := Vector2(0.35, 0.35)
+const SMOKE_DIRECTION := Vector3(0.3, 1, 0)
+const SMOKE_SPREAD := 12.0
+const SMOKE_GRAVITY := Vector3(0.15, 0.25, 0)
+const SMOKE_VELOCITY_MIN := 0.3
+const SMOKE_VELOCITY_MAX := 0.5
+const SMOKE_SCALE_MIN := 0.6
+const SMOKE_SCALE_MAX := 1.2
+## Puffs grow from this scale at birth to SMOKE_SCALE_END at death.
+const SMOKE_SCALE_START := 0.5
+const SMOKE_SCALE_END := 1.8
+const SMOKE_COLOR_START := Color(0.9, 0.9, 0.95, 0.55)
+const SMOKE_COLOR_END := Color(0.8, 0.8, 0.9, 0.0)
+
+# Lamps
+const LAMP_EMISSION := 2.5
+## Light sits in the lantern head.
+const LAMP_LIGHT_OFFSET := Vector3(0, 1.65, 0.15)
+const LAMP_LIGHT_COLOR := Color(1.0, 0.68, 0.35)
+const LAMP_LIGHT_ENERGY := 1.8
+const LAMP_LIGHT_RANGE := 6.0
+const LAMP_LIGHT_ATTENUATION := 1.4
+
+# Fences
+const FENCE_POST_SIZE := Vector3(0.14, 0.75, 0.14)
+const FENCE_POST_OFFSET := Vector3(0, 0.375, 0)
+const FENCE_RAIL_SIZE := Vector3(1.0, 0.1, 0.06)
+const FENCE_RAIL_TOP_OFFSET := Vector3(0, 0.55, 0)
+const FENCE_RAIL_BOTTOM_OFFSET := Vector3(0, 0.28, 0)
+
+# Bridge rails
+const BRIDGE_RAIL_SIZE := Vector3(0.1, 0.1, 1.0)
+const BRIDGE_RAIL_Y := 0.5
+const BRIDGE_POST_SIZE := Vector3(0.12, 0.6, 0.12)
+const BRIDGE_POST_Y := 0.3
+const BRIDGE_POST_Z := 0.1
+## X offsets of the west/east rails within their cell.
+const BRIDGE_RAIL_WEST_X := 0.05
+const BRIDGE_RAIL_EAST_X := 0.95
+
+# Small props
+const ROCK_OFFSET := Vector3(0, 0, 0.1)
+const ROCK_SCALE := 1.6
+const BUSH_SCALE := 1.3
+const BUSH_SWAY := 0.02
+## Closed / open frames.
+const CHEST_FRAMES := 2
+## Lifts the chest sprite so its bottom edge sits on the ground (texels).
+const CHEST_SPRITE_OFFSET := Vector2(0, 8)
+
+# Well (occupies a 2x2 block; centred on the block's middle corner)
+const WELL_CENTER_OFFSET := Vector3(1.0, 0, 1.0)
+const WELL_STONE_UV_SCALE := Vector3(4, 1, 1)
+const WELL_RING_TOP_RADIUS := 0.8
+const WELL_RING_BOTTOM_RADIUS := 0.85
+const WELL_RING_HEIGHT := 0.8
+const WELL_RING_SEGMENTS := 16
+const WELL_RING_OFFSET := Vector3(0, 0.4, 0)
+const WELL_WATER_RADIUS := 0.66
+const WELL_WATER_THICKNESS := 0.02
+const WELL_WATER_OFFSET := Vector3(0, 0.75, 0)
+const WELL_POST_SIZE := Vector3(0.12, 1.6, 0.12)
+const WELL_POST_LEFT_OFFSET := Vector3(-0.7, 0.8, 0)
+const WELL_POST_RIGHT_OFFSET := Vector3(0.7, 0.8, 0)
+const WELL_BEAM_SIZE := Vector3(1.6, 0.1, 0.1)
+const WELL_BEAM_OFFSET := Vector3(0, 1.5, 0)
+const WELL_ROOF_SIZE := Vector3(1.9, 0.55, 1.2)
+const WELL_ROOF_OFFSET := Vector3(0, 1.85, 0)
+
+# Foliage
+## Chance of the rare tree variant instead of one of the two common ones.
+const TREE_RARE_CHANCE := 0.18
+const TREE_RARE_VARIANT := 2
+const TREE_JITTER_X := 0.12
+const TREE_JITTER_Z := 0.1
+const TREE_SCALE_MIN := 0.95
+const TREE_SCALE_MAX := 1.2
+const TREE_SWAY := 0.035
+const PINE_SCALE_MIN := 0.95
+const PINE_SCALE_MAX := 1.25
+const PINE_SWAY := 0.02
+## Heights of the high ("^") and low ("#") cliff tops.
+const HIGH_CLIFF_TOP := 3.0
+const LOW_CLIFF_TOP := 2.0
+const CLIFF_PINE_CHANCE := 0.35
+const CLIFF_PINE_JITTER := 0.2
+const CLIFF_PINE_SCALE_MIN := 0.8
+const CLIFF_PINE_SCALE_MAX := 1.15
+const HIGH_CLIFF_TUFT_CHANCE := 0.25
+const LOW_CLIFF_TUFT_CHANCE := 0.5
+## Tuft variants 0-1 are short grass, 2-3 tall grass; flowers have 4 variants.
+const TALL_TUFT_VARIANT_MIN := 2
+const TALL_TUFT_VARIANT_MAX := 3
+const FLOWER_VARIANT_MAX := 3
+const TALL_GRASS_TUFTS := 4
+const TALL_TUFT_SCALE_MIN := 1.1
+const TALL_TUFT_SCALE_MAX := 1.5
+const MEADOW_TUFT_CHANCE := 0.3
+const MEADOW_TUFT_SCALE_MIN := 0.7
+const MEADOW_TUFT_SCALE_MAX := 1.0
+const MEADOW_FLOWER_CHANCE := 0.04
+const FLOWER_BED_FLOWERS := 2
+const TUFT_SWAY := 0.06
+const FLOWER_SWAY := 0.04
+## Max offset of a tuft from its cell centre.
+const TUFT_SCATTER := 0.42
+
+# Outer forest
+const OUTER_TREE_ATTEMPTS := 420
+const OUTER_MARGIN_X := 16
+const OUTER_MARGIN_NORTH := 14
+const OUTER_MARGIN_SOUTH := 12
+## No trees within this distance of the playable area.
+const OUTER_CLEARANCE := 1.0
+## Mostly-open strip south of the map, between these distances, keeps the camera view clear.
+const CAMERA_STRIP_START := 1.0
+const CAMERA_STRIP_END := 3.0
+const CAMERA_STRIP_SKIP_CHANCE := 0.7
+const OUTER_SCALE_MIN := 0.9
+const OUTER_SCALE_MAX := 1.4
+const OUTER_PINE_CHANCE := 0.4
+const OUTER_TREE_SWAY := 0.03
 
 static var _billboard_shader: Shader = preload("res://shaders/billboard_sway.gdshader")
 static var _water_shader: Shader = preload("res://shaders/water.gdshader")
@@ -25,7 +192,7 @@ var _surfaces := {}
 
 
 func build(parent: Node3D) -> void:
-	rng.seed = 20240917
+	rng.seed = RNG_SEED
 	root = Node3D.new()
 	root.name = "World"
 	parent.add_child(root)
@@ -116,8 +283,8 @@ func _top_material(c: String, x: int, y: int) -> String:
 		"=", "d", "@": return "dirt"
 		"s", "L", "W", "h": return "stone"
 		"b": return "wood"
-	var n := sin(x * 0.35 + 1.3) + cos(y * 0.42) + sin((x + y) * 0.17)
-	return "grass_dark" if n > 1.1 else "grass"
+	var n := sin(x * GRASS_NOISE_FREQ_X + GRASS_NOISE_PHASE_X) + cos(y * GRASS_NOISE_FREQ_Y) + sin((x + y) * GRASS_NOISE_FREQ_DIAG)
+	return "grass_dark" if n > DARK_GRASS_THRESHOLD else "grass"
 
 
 func _build_terrain() -> void:
@@ -132,7 +299,7 @@ func _build_terrain() -> void:
 				var uvs := [Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1)]
 				if mat in ["grass", "grass_dark", "tall_grass", "cliff_top", "dirt"]:
 					# Rotate/flip UVs per tile to hide repetition.
-					var r := rng.randi_range(0, 3)
+					var r := rng.randi_range(0, UV_MAX_ROTATIONS)
 					for i in r:
 						uvs.push_front(uvs.pop_back())
 				add_quad(_st(mat), [
@@ -179,8 +346,8 @@ func _build_sides(x: int, y: int, c: String, h: float) -> void:
 		var is_cliff := c == "^" or c == "#"
 		var top := h
 		var first := true
-		while top > hn + 0.001:
-			var bottom: float = max(top - 1.0, hn)
+		while top > hn + SIDE_EPSILON:
+			var bottom: float = max(top - SIDE_SEGMENT_HEIGHT, hn)
 			var mat: String
 			if c == "b":
 				mat = "wood"
@@ -225,7 +392,7 @@ func _build_water() -> void:
 
 ## A large ground plane around the map so the edges of the diorama never show the void.
 func _build_skirt() -> void:
-	var size := 140.0
+	var size := SKIRT_SIZE
 	var plane := PlaneMesh.new()
 	plane.size = Vector2(size, size)
 	var mat := TextureFactory.get_material("grass_dark").duplicate() as StandardMaterial3D
@@ -267,16 +434,18 @@ func _build_collision() -> void:
 			while x < MapData.width() and _is_blocked(x, y):
 				x += 1
 			var shape := BoxShape3D.new()
-			shape.size = Vector3(x - start, 4.0, 1.0)
+			shape.size = Vector3(x - start, COLLIDER_HEIGHT, 1.0)
 			var cs := CollisionShape3D.new()
 			cs.shape = shape
-			cs.position = Vector3(start + (x - start) * 0.5, 1.0, y + 0.5)
+			cs.position = Vector3(start + (x - start) * 0.5, COLLIDER_CENTER_Y, y + 0.5)
 			body.add_child(cs)
 	# Outer bounds, just in case.
 	var w := float(MapData.width())
 	var d := float(MapData.depth())
-	for b in [[Vector3(w * 0.5, 1, -0.5), Vector3(w, 4, 1)], [Vector3(w * 0.5, 1, d + 0.5), Vector3(w, 4, 1)],
-			[Vector3(-0.5, 1, d * 0.5), Vector3(1, 4, d)], [Vector3(w + 0.5, 1, d * 0.5), Vector3(1, 4, d)]]:
+	var cy := COLLIDER_CENTER_Y
+	var ch := COLLIDER_HEIGHT
+	for b in [[Vector3(w * 0.5, cy, -0.5), Vector3(w, ch, 1)], [Vector3(w * 0.5, cy, d + 0.5), Vector3(w, ch, 1)],
+			[Vector3(-0.5, cy, d * 0.5), Vector3(1, ch, d)], [Vector3(w + 0.5, cy, d * 0.5), Vector3(1, ch, d)]]:
 		var shape := BoxShape3D.new()
 		shape.size = b[1]
 		var cs := CollisionShape3D.new()
@@ -362,8 +531,8 @@ func _build_house(house: Dictionary, roof_kind: String, index: int) -> void:
 		[Vector2(0, 0), Vector2(wlen + 2 * o, 0), Vector2(wlen + 2 * o, slope_len), Vector2(0, slope_len)], back_n)
 	# Eave underside so the overhang has thickness when seen from below.
 	add_quad(roof, [Vector3(x0 - o, h - eave_drop, z1 + o), Vector3(x1 + o, h - eave_drop, z1 + o),
-		Vector3(x1 + o, h - eave_drop - 0.12, z1 + o), Vector3(x0 - o, h - eave_drop - 0.12, z1 + o)],
-		[Vector2(0, 0), Vector2(wlen, 0), Vector2(wlen, 0.12), Vector2(0, 0.12)], Vector3.BACK)
+		Vector3(x1 + o, h - eave_drop - EAVE_THICKNESS, z1 + o), Vector3(x0 - o, h - eave_drop - EAVE_THICKNESS, z1 + o)],
+		[Vector2(0, 0), Vector2(wlen, 0), Vector2(wlen, EAVE_THICKNESS), Vector2(0, EAVE_THICKNESS)], Vector3.BACK)
 
 	var wall_mesh := walls.commit()
 	wall_mesh.surface_set_material(0, TextureFactory.get_material("house_wall"))
@@ -381,23 +550,23 @@ func _build_house(house: Dictionary, roof_kind: String, index: int) -> void:
 	# Door and glowing windows on the front.
 	var door_x: int = house.door
 	if door_x >= 0:
-		_add_wall_decal(SpriteFactory.door(), Vector3(door_x + 0.5, 0, z1 + 0.02), false)
+		_add_wall_decal(SpriteFactory.door(), Vector3(door_x + 0.5, 0, z1 + DECAL_WALL_OFFSET), false)
 	for wx in range(house.x0, house.x1 + 1):
 		if wx == door_x or wx == house.x0 or wx == house.x1:
 			continue
-		_add_wall_decal(SpriteFactory.window(), Vector3(wx + 0.5, 0.85, z1 + 0.02), true)
+		_add_wall_decal(SpriteFactory.window(), Vector3(wx + 0.5, WINDOW_HEIGHT, z1 + DECAL_WALL_OFFSET), true)
 	# Chimney with smoke on every other house.
-	if index % 2 == 0:
+	if index % CHIMNEY_EVERY == 0:
 		var chimney := MeshInstance3D.new()
 		var box := BoxMesh.new()
-		box.size = Vector3(0.45, 1.1, 0.45)
+		box.size = CHIMNEY_SIZE
 		chimney.mesh = box
 		chimney.material_override = TextureFactory.get_material("cliff_side")
-		var cx := x1 - 1.0
-		var cz := z0 + dlen * 0.3
-		chimney.position = Vector3(cx, h + ROOF_RISE * 0.55 + 0.35, cz)
+		var cx := x1 - CHIMNEY_INSET_X
+		var cz := z0 + dlen * CHIMNEY_DEPTH_FRACTION
+		chimney.position = Vector3(cx, h + ROOF_RISE * CHIMNEY_RISE_FRACTION + CHIMNEY_LIFT, cz)
 		root.add_child(chimney)
-		root.add_child(_make_smoke(chimney.position + Vector3(0, 0.6, 0)))
+		root.add_child(_make_smoke(chimney.position + SMOKE_EMIT_OFFSET))
 
 
 func _add_wall_decal(tex: Texture2D, base: Vector3, emissive: bool) -> void:
@@ -408,12 +577,12 @@ func _add_wall_decal(tex: Texture2D, base: Vector3, emissive: bool) -> void:
 	mat.albedo_texture = tex
 	mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
-	mat.roughness = 0.9
+	mat.roughness = DECAL_ROUGHNESS
 	if emissive:
 		mat.emission_enabled = true
 		mat.emission_texture = tex
-		mat.emission = Color(1.0, 0.75, 0.4)
-		mat.emission_energy_multiplier = 0.9
+		mat.emission = WINDOW_EMISSION
+		mat.emission_energy_multiplier = WINDOW_EMISSION_ENERGY
 	var mi := MeshInstance3D.new()
 	mi.mesh = quad
 	mi.material_override = mat
@@ -425,11 +594,11 @@ func _add_wall_decal(tex: Texture2D, base: Vector3, emissive: bool) -> void:
 func _make_smoke(pos: Vector3) -> CPUParticles3D:
 	var p := CPUParticles3D.new()
 	p.position = pos
-	p.amount = 14
-	p.lifetime = 3.5
+	p.amount = SMOKE_AMOUNT
+	p.lifetime = SMOKE_LIFETIME
 	p.local_coords = false
 	var quad := QuadMesh.new()
-	quad.size = Vector2(0.35, 0.35)
+	quad.size = SMOKE_PUFF_SIZE
 	var mat := StandardMaterial3D.new()
 	mat.albedo_texture = SpriteFactory.particle_dot()
 	mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
@@ -439,20 +608,20 @@ func _make_smoke(pos: Vector3) -> CPUParticles3D:
 	mat.vertex_color_use_as_albedo = true
 	quad.material = mat
 	p.mesh = quad
-	p.direction = Vector3(0.3, 1, 0)
-	p.spread = 12.0
-	p.gravity = Vector3(0.15, 0.25, 0)
-	p.initial_velocity_min = 0.3
-	p.initial_velocity_max = 0.5
-	p.scale_amount_min = 0.6
-	p.scale_amount_max = 1.2
+	p.direction = SMOKE_DIRECTION
+	p.spread = SMOKE_SPREAD
+	p.gravity = SMOKE_GRAVITY
+	p.initial_velocity_min = SMOKE_VELOCITY_MIN
+	p.initial_velocity_max = SMOKE_VELOCITY_MAX
+	p.scale_amount_min = SMOKE_SCALE_MIN
+	p.scale_amount_max = SMOKE_SCALE_MAX
 	var curve := Curve.new()
-	curve.add_point(Vector2(0, 0.5))
-	curve.add_point(Vector2(1, 1.8))
+	curve.add_point(Vector2(0, SMOKE_SCALE_START))
+	curve.add_point(Vector2(1, SMOKE_SCALE_END))
 	p.scale_amount_curve = curve
 	var grad := Gradient.new()
-	grad.set_color(0, Color(0.9, 0.9, 0.95, 0.55))
-	grad.set_color(1, Color(0.8, 0.8, 0.9, 0.0))
+	grad.set_color(0, SMOKE_COLOR_START)
+	grad.set_color(1, SMOKE_COLOR_END)
 	p.color_ramp = grad
 	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	return p
@@ -471,33 +640,33 @@ func _build_props() -> void:
 			var center := Vector3(x + 0.5, 0, y + 0.5)
 			match c:
 				"L":
-					_add_billboard(SpriteFactory.lamp_post(), center, 1.0, 0.0, 2.5)
+					_add_billboard(SpriteFactory.lamp_post(), center, 1.0, 0.0, LAMP_EMISSION)
 					var light := OmniLight3D.new()
-					light.position = center + Vector3(0, 1.65, 0.15)
-					light.light_color = Color(1.0, 0.68, 0.35)
-					light.light_energy = 1.8
-					light.omni_range = 6.0
-					light.omni_attenuation = 1.4
+					light.position = center + LAMP_LIGHT_OFFSET
+					light.light_color = LAMP_LIGHT_COLOR
+					light.light_energy = LAMP_LIGHT_ENERGY
+					light.omni_range = LAMP_LIGHT_RANGE
+					light.omni_attenuation = LAMP_LIGHT_ATTENUATION
 					root.add_child(light)
 					lamps.append(light)
 				"F":
-					_add_box(wood, Vector3(0.14, 0.75, 0.14), center + Vector3(0, 0.375, 0))
-					_add_box(wood, Vector3(1.0, 0.1, 0.06), center + Vector3(0, 0.55, 0))
-					_add_box(wood, Vector3(1.0, 0.1, 0.06), center + Vector3(0, 0.28, 0))
+					_add_box(wood, FENCE_POST_SIZE, center + FENCE_POST_OFFSET)
+					_add_box(wood, FENCE_RAIL_SIZE, center + FENCE_RAIL_TOP_OFFSET)
+					_add_box(wood, FENCE_RAIL_SIZE, center + FENCE_RAIL_BOTTOM_OFFSET)
 				"W":
 					if not well_done:
 						well_done = true
-						_build_well(Vector3(x + 1.0, 0, y + 1.0))
+						_build_well(Vector3(x, 0, y) + WELL_CENTER_OFFSET)
 				"r":
-					_add_billboard(SpriteFactory.rock(), center + Vector3(0, 0, 0.1), 1.6)
+					_add_billboard(SpriteFactory.rock(), center + ROCK_OFFSET, ROCK_SCALE)
 				"o":
-					_add_billboard(SpriteFactory.bush(), center, 1.3, 0.02)
+					_add_billboard(SpriteFactory.bush(), center, BUSH_SCALE, BUSH_SWAY)
 				"C":
 					var chest := Sprite3D.new()
 					chest.texture = SpriteFactory.chest()
-					chest.hframes = 2
+					chest.hframes = CHEST_FRAMES
 					chest.pixel_size = PX
-					chest.offset = Vector2(0, 8)
+					chest.offset = CHEST_SPRITE_OFFSET
 					chest.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
 					chest.shaded = true
 					chest.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
@@ -509,11 +678,11 @@ func _build_props() -> void:
 	for y in MapData.depth():
 		for x in MapData.width():
 			if MapData.cell(x, y) == "b" and MapData.cell(x - 1, y) != "b":
-				_add_box(wood, Vector3(0.1, 0.1, 1.0), Vector3(x + 0.05, 0.5, y + 0.5))
-				_add_box(wood, Vector3(0.12, 0.6, 0.12), Vector3(x + 0.05, 0.3, y + 0.1))
+				_add_box(wood, BRIDGE_RAIL_SIZE, Vector3(x + BRIDGE_RAIL_WEST_X, BRIDGE_RAIL_Y, y + 0.5))
+				_add_box(wood, BRIDGE_POST_SIZE, Vector3(x + BRIDGE_RAIL_WEST_X, BRIDGE_POST_Y, y + BRIDGE_POST_Z))
 			if MapData.cell(x, y) == "b" and MapData.cell(x + 1, y) != "b":
-				_add_box(wood, Vector3(0.1, 0.1, 1.0), Vector3(x + 0.95, 0.5, y + 0.5))
-				_add_box(wood, Vector3(0.12, 0.6, 0.12), Vector3(x + 0.95, 0.3, y + 0.1))
+				_add_box(wood, BRIDGE_RAIL_SIZE, Vector3(x + BRIDGE_RAIL_EAST_X, BRIDGE_RAIL_Y, y + 0.5))
+				_add_box(wood, BRIDGE_POST_SIZE, Vector3(x + BRIDGE_RAIL_EAST_X, BRIDGE_POST_Y, y + BRIDGE_POST_Z))
 	for s in MapData.SIGNS:
 		var cell: Vector2i = s.cell
 		signs[cell] = _add_billboard(SpriteFactory.signpost(), MapData.cell_center(cell), 1.0)
@@ -532,38 +701,38 @@ func _add_box(mat: Material, size: Vector3, pos: Vector3) -> MeshInstance3D:
 
 func _build_well(center: Vector3) -> void:
 	var stone := TextureFactory.get_material("cliff_side").duplicate() as StandardMaterial3D
-	stone.uv1_scale = Vector3(4, 1, 1)
+	stone.uv1_scale = WELL_STONE_UV_SCALE
 	var ring := CylinderMesh.new()
-	ring.top_radius = 0.8
-	ring.bottom_radius = 0.85
-	ring.height = 0.8
-	ring.radial_segments = 16
+	ring.top_radius = WELL_RING_TOP_RADIUS
+	ring.bottom_radius = WELL_RING_BOTTOM_RADIUS
+	ring.height = WELL_RING_HEIGHT
+	ring.radial_segments = WELL_RING_SEGMENTS
 	var mi := MeshInstance3D.new()
 	mi.mesh = ring
 	mi.material_override = stone
-	mi.position = center + Vector3(0, 0.4, 0)
+	mi.position = center + WELL_RING_OFFSET
 	root.add_child(mi)
 	var water := CylinderMesh.new()
-	water.top_radius = 0.66
-	water.bottom_radius = 0.66
-	water.height = 0.02
+	water.top_radius = WELL_WATER_RADIUS
+	water.bottom_radius = WELL_WATER_RADIUS
+	water.height = WELL_WATER_THICKNESS
 	var wmat := ShaderMaterial.new()
 	wmat.shader = _water_shader
 	var wmi := MeshInstance3D.new()
 	wmi.mesh = water
 	wmi.material_override = wmat
-	wmi.position = center + Vector3(0, 0.75, 0)
+	wmi.position = center + WELL_WATER_OFFSET
 	root.add_child(wmi)
 	var wood := TextureFactory.get_material("house_beam")
-	_add_box(wood, Vector3(0.12, 1.6, 0.12), center + Vector3(-0.7, 0.8, 0))
-	_add_box(wood, Vector3(0.12, 1.6, 0.12), center + Vector3(0.7, 0.8, 0))
-	_add_box(wood, Vector3(1.6, 0.1, 0.1), center + Vector3(0, 1.5, 0))
+	_add_box(wood, WELL_POST_SIZE, center + WELL_POST_LEFT_OFFSET)
+	_add_box(wood, WELL_POST_SIZE, center + WELL_POST_RIGHT_OFFSET)
+	_add_box(wood, WELL_BEAM_SIZE, center + WELL_BEAM_OFFSET)
 	var roof := PrismMesh.new()
-	roof.size = Vector3(1.9, 0.55, 1.2)
+	roof.size = WELL_ROOF_SIZE
 	var rmi := MeshInstance3D.new()
 	rmi.mesh = roof
 	rmi.material_override = TextureFactory.get_material("roof_brown")
-	rmi.position = center + Vector3(0, 1.85, 0)
+	rmi.position = center + WELL_ROOF_OFFSET
 	root.add_child(rmi)
 
 
@@ -580,36 +749,44 @@ func _build_foliage() -> void:
 			var base := Vector3(x + 0.5, 0, y + 0.5)
 			match c:
 				"T":
-					var variant := 2 if rng.randf() < 0.18 else rng.randi_range(0, 1)
-					var jitter := Vector3(rng.randf_range(-0.12, 0.12), 0, rng.randf_range(-0.1, 0.1))
-					_add_billboard(SpriteFactory.tree(variant), base + jitter, rng.randf_range(0.95, 1.2), 0.035)
+					var variant := TREE_RARE_VARIANT if rng.randf() < TREE_RARE_CHANCE else rng.randi_range(0, 1)
+					var jitter := Vector3(rng.randf_range(-TREE_JITTER_X, TREE_JITTER_X), 0,
+							rng.randf_range(-TREE_JITTER_Z, TREE_JITTER_Z))
+					_add_billboard(SpriteFactory.tree(variant), base + jitter,
+							rng.randf_range(TREE_SCALE_MIN, TREE_SCALE_MAX), TREE_SWAY)
 				"P":
-					var jitter := Vector3(rng.randf_range(-0.12, 0.12), 0, rng.randf_range(-0.1, 0.1))
-					_add_billboard(SpriteFactory.pine(), base + jitter, rng.randf_range(0.95, 1.25), 0.02)
+					var jitter := Vector3(rng.randf_range(-TREE_JITTER_X, TREE_JITTER_X), 0,
+							rng.randf_range(-TREE_JITTER_Z, TREE_JITTER_Z))
+					_add_billboard(SpriteFactory.pine(), base + jitter,
+							rng.randf_range(PINE_SCALE_MIN, PINE_SCALE_MAX), PINE_SWAY)
 				"^":
-					if _is_edge(x, y) and rng.randf() < 0.35:
-						var jitter := Vector3(rng.randf_range(-0.2, 0.2), 3.0, rng.randf_range(-0.2, 0.2))
-						_add_billboard(SpriteFactory.pine(), base + jitter, rng.randf_range(0.8, 1.15), 0.02)
-					elif rng.randf() < 0.25:
-						tufts[rng.randi_range(0, 1)].append(_tuft_xform(base + Vector3(0, 3.0, 0), 1.0))
+					if _is_edge(x, y) and rng.randf() < CLIFF_PINE_CHANCE:
+						var jitter := Vector3(rng.randf_range(-CLIFF_PINE_JITTER, CLIFF_PINE_JITTER), HIGH_CLIFF_TOP,
+								rng.randf_range(-CLIFF_PINE_JITTER, CLIFF_PINE_JITTER))
+						_add_billboard(SpriteFactory.pine(), base + jitter,
+								rng.randf_range(CLIFF_PINE_SCALE_MIN, CLIFF_PINE_SCALE_MAX), PINE_SWAY)
+					elif rng.randf() < HIGH_CLIFF_TUFT_CHANCE:
+						tufts[rng.randi_range(0, 1)].append(_tuft_xform(base + Vector3(0, HIGH_CLIFF_TOP, 0), 1.0))
 				"#":
-					if rng.randf() < 0.5:
-						tufts[rng.randi_range(0, 1)].append(_tuft_xform(base + Vector3(0, 2.0, 0), 1.0))
+					if rng.randf() < LOW_CLIFF_TUFT_CHANCE:
+						tufts[rng.randi_range(0, 1)].append(_tuft_xform(base + Vector3(0, LOW_CLIFF_TOP, 0), 1.0))
 				",":
-					for i in 4:
-						tufts[rng.randi_range(2, 3)].append(_tuft_xform(base, rng.randf_range(1.1, 1.5)))
+					for i in TALL_GRASS_TUFTS:
+						tufts[rng.randi_range(TALL_TUFT_VARIANT_MIN, TALL_TUFT_VARIANT_MAX)].append(
+								_tuft_xform(base, rng.randf_range(TALL_TUFT_SCALE_MIN, TALL_TUFT_SCALE_MAX)))
 				".", "@":
-					if rng.randf() < 0.3:
-						tufts[rng.randi_range(0, 1)].append(_tuft_xform(base, rng.randf_range(0.7, 1.0)))
-					if rng.randf() < 0.04:
-						flower_sets[rng.randi_range(0, 3)].append(_tuft_xform(base, 1.0))
+					if rng.randf() < MEADOW_TUFT_CHANCE:
+						tufts[rng.randi_range(0, 1)].append(
+								_tuft_xform(base, rng.randf_range(MEADOW_TUFT_SCALE_MIN, MEADOW_TUFT_SCALE_MAX)))
+					if rng.randf() < MEADOW_FLOWER_CHANCE:
+						flower_sets[rng.randi_range(0, FLOWER_VARIANT_MAX)].append(_tuft_xform(base, 1.0))
 				"f":
-					for i in 2:
-						flower_sets[rng.randi_range(0, 3)].append(_tuft_xform(base, 1.0))
+					for i in FLOWER_BED_FLOWERS:
+						flower_sets[rng.randi_range(0, FLOWER_VARIANT_MAX)].append(_tuft_xform(base, 1.0))
 	for v in tufts:
-		_add_multimesh(SpriteFactory.grass_tuft(v), tufts[v], 0.06)
+		_add_multimesh(SpriteFactory.grass_tuft(v), tufts[v], TUFT_SWAY)
 	for v in flower_sets:
-		_add_multimesh(SpriteFactory.flowers(v), flower_sets[v], 0.04)
+		_add_multimesh(SpriteFactory.flowers(v), flower_sets[v], FLOWER_SWAY)
 
 
 func _is_edge(x: int, y: int) -> bool:
@@ -620,7 +797,7 @@ func _is_edge(x: int, y: int) -> bool:
 
 
 func _tuft_xform(base: Vector3, s: float) -> Transform3D:
-	var offset := Vector3(rng.randf_range(-0.42, 0.42), 0, rng.randf_range(-0.42, 0.42))
+	var offset := Vector3(rng.randf_range(-TUFT_SCATTER, TUFT_SCATTER), 0, rng.randf_range(-TUFT_SCATTER, TUFT_SCATTER))
 	return Transform3D(Basis.from_scale(Vector3.ONE * s), base + offset)
 
 
@@ -646,21 +823,22 @@ func _build_outer_forest() -> void:
 	var d := float(MapData.depth())
 	var tree_x := []
 	var pine_x := []
-	for i in 420:
-		var p := Vector3(rng.randf_range(-16, w + 16), SKIRT_LEVEL, rng.randf_range(-14, d + 12))
-		if p.x > -1.0 and p.x < w + 1.0 and p.z > -1.0 and p.z < d + 1.0:
+	for i in OUTER_TREE_ATTEMPTS:
+		var p := Vector3(rng.randf_range(-OUTER_MARGIN_X, w + OUTER_MARGIN_X), SKIRT_LEVEL,
+				rng.randf_range(-OUTER_MARGIN_NORTH, d + OUTER_MARGIN_SOUTH))
+		if p.x > -OUTER_CLEARANCE and p.x < w + OUTER_CLEARANCE and p.z > -OUTER_CLEARANCE and p.z < d + OUTER_CLEARANCE:
 			continue
 		# Keep the strip right in front of the camera fairly open.
-		if p.z > d + 1.0 and p.z < d + 3.0 and rng.randf() < 0.7:
+		if p.z > d + CAMERA_STRIP_START and p.z < d + CAMERA_STRIP_END and rng.randf() < CAMERA_STRIP_SKIP_CHANCE:
 			continue
-		var s := rng.randf_range(0.9, 1.4)
+		var s := rng.randf_range(OUTER_SCALE_MIN, OUTER_SCALE_MAX)
 		var xf := Transform3D(Basis.from_scale(Vector3.ONE * s), p)
-		if p.z < 0.0 or rng.randf() < 0.4:
+		if p.z < 0.0 or rng.randf() < OUTER_PINE_CHANCE:
 			pine_x.append(xf)
 		else:
 			tree_x.append(xf)
-	_add_multimesh_shadowed(SpriteFactory.pine(), pine_x, 0.02)
-	_add_multimesh_shadowed(SpriteFactory.tree(0), tree_x, 0.03)
+	_add_multimesh_shadowed(SpriteFactory.pine(), pine_x, PINE_SWAY)
+	_add_multimesh_shadowed(SpriteFactory.tree(0), tree_x, OUTER_TREE_SWAY)
 
 
 func _add_multimesh_shadowed(tex: Texture2D, xforms: Array, sway: float) -> void:

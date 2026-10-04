@@ -5,7 +5,34 @@ extends Control
 
 signal _advance
 
+# Typewriter
 const CHARS_PER_SEC := 55.0
+
+# Message window (offsets from the bottom-centre of the screen)
+const PANEL_ALPHA := 0.9
+const PANEL_HALF_WIDTH := 470
+const PANEL_TOP := -190
+const PANEL_BOTTOM := -28
+const TEXT_MIN_SIZE := Vector2(0, 110)
+
+# Name plate
+const NAME_PANEL_ALPHA := 0.95
+const NAME_PANEL_MARGIN_Y := 4
+const NAME_PANEL_COLOR := Color(0.16, 0.1, 0.22, 0.95)
+const NAME_PANEL_LEFT := -450
+const NAME_PANEL_RIGHT := -300
+const NAME_PANEL_TOP := -212
+const NAME_PANEL_BOTTOM := -176
+
+# "More text" arrow
+const ARROW_LEFT := 438
+const ARROW_TOP := -62
+const ARROW_BOB_SPEED := 6.0
+const ARROW_BOB_AMPLITUDE := 3.0
+
+# Choice menu
+const CHOICES_LEFT := 250
+const CHOICES_TOP := -330
 
 var _panel: PanelContainer
 var _name_panel: PanelContainer
@@ -29,50 +56,50 @@ func _init() -> void:
 	visible = false
 
 	_panel = PanelContainer.new()
-	_panel.add_theme_stylebox_override("panel", UITheme.panel_style(0.9))
+	_panel.add_theme_stylebox_override("panel", UITheme.panel_style(PANEL_ALPHA))
 	_panel.anchor_left = 0.5
 	_panel.anchor_right = 0.5
 	_panel.anchor_top = 1.0
 	_panel.anchor_bottom = 1.0
-	_panel.offset_left = -470
-	_panel.offset_right = 470
-	_panel.offset_top = -190
-	_panel.offset_bottom = -28
+	_panel.offset_left = -PANEL_HALF_WIDTH
+	_panel.offset_right = PANEL_HALF_WIDTH
+	_panel.offset_top = PANEL_TOP
+	_panel.offset_bottom = PANEL_BOTTOM
 	add_child(_panel)
 
 	_text = RichTextLabel.new()
 	_text.bbcode_enabled = true
 	_text.scroll_active = false
-	_text.add_theme_font_size_override("normal_font_size", 25)
-	_text.add_theme_font_size_override("bold_font_size", 25)
-	_text.custom_minimum_size = Vector2(0, 110)
+	_text.add_theme_font_size_override("normal_font_size", UITheme.FONT_DIALOGUE)
+	_text.add_theme_font_size_override("bold_font_size", UITheme.FONT_DIALOGUE)
+	_text.custom_minimum_size = TEXT_MIN_SIZE
 	_panel.add_child(_text)
 
 	_name_panel = PanelContainer.new()
-	var name_style := UITheme.panel_style(0.95)
-	name_style.content_margin_top = 4
-	name_style.content_margin_bottom = 4
-	name_style.bg_color = Color(0.16, 0.1, 0.22, 0.95)
+	var name_style := UITheme.panel_style(NAME_PANEL_ALPHA)
+	name_style.content_margin_top = NAME_PANEL_MARGIN_Y
+	name_style.content_margin_bottom = NAME_PANEL_MARGIN_Y
+	name_style.bg_color = NAME_PANEL_COLOR
 	_name_panel.add_theme_stylebox_override("panel", name_style)
 	_name_panel.anchor_left = 0.5
 	_name_panel.anchor_right = 0.5
 	_name_panel.anchor_top = 1.0
 	_name_panel.anchor_bottom = 1.0
-	_name_panel.offset_left = -450
-	_name_panel.offset_right = -300
-	_name_panel.offset_top = -212
-	_name_panel.offset_bottom = -176
+	_name_panel.offset_left = NAME_PANEL_LEFT
+	_name_panel.offset_right = NAME_PANEL_RIGHT
+	_name_panel.offset_top = NAME_PANEL_TOP
+	_name_panel.offset_bottom = NAME_PANEL_BOTTOM
 	add_child(_name_panel)
-	_name_label = UITheme.label("", 22, UITheme.GOLD)
+	_name_label = UITheme.label("", UITheme.FONT_BODY, UITheme.GOLD)
 	_name_panel.add_child(_name_label)
 
-	_arrow = UITheme.label("▼", 20, UITheme.GOLD)
+	_arrow = UITheme.label("▼", UITheme.FONT_MEDIUM, UITheme.GOLD)
 	_arrow.anchor_left = 0.5
 	_arrow.anchor_right = 0.5
 	_arrow.anchor_top = 1.0
 	_arrow.anchor_bottom = 1.0
-	_arrow.offset_left = 438
-	_arrow.offset_top = -62
+	_arrow.offset_left = ARROW_LEFT
+	_arrow.offset_top = ARROW_TOP
 	add_child(_arrow)
 
 	_choices = SelectMenu.new()
@@ -80,8 +107,8 @@ func _init() -> void:
 	_choices.anchor_right = 0.5
 	_choices.anchor_top = 1.0
 	_choices.anchor_bottom = 1.0
-	_choices.offset_left = 250
-	_choices.offset_top = -330
+	_choices.offset_left = CHOICES_LEFT
+	_choices.offset_top = CHOICES_TOP
 	_choices.visible = false
 	add_child(_choices)
 
@@ -130,7 +157,7 @@ func _process(delta: float) -> void:
 			_typing = false
 			_waiting = true
 	_arrow.visible = _waiting and not _choices.active
-	_arrow.offset_top = -62 + sin(_time * 6.0) * 3.0
+	_arrow.offset_top = ARROW_TOP + sin(_time * ARROW_BOB_SPEED) * ARROW_BOB_AMPLITUDE
 
 
 func _unhandled_input(event: InputEvent) -> void:

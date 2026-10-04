@@ -6,6 +6,18 @@ extends PanelContainer
 signal finished(index: int)
 signal hovered(index: int)
 
+# Layout
+const ROW_SEPARATION := 4
+const COLUMN_SEPARATION := 28
+
+# Highlight
+## How much lighter a disabled item gets when the cursor is on it.
+const DISABLED_HIGHLIGHT_LIGHTEN := 0.2
+## The selected item's alpha pulses around BASE by +/- DEPTH.
+const CURSOR_BLINK_BASE_ALPHA := 0.75
+const CURSOR_BLINK_DEPTH := 0.25
+const CURSOR_BLINK_SPEED := 8.0
+
 var items: Array = []
 var index := 0
 var active := false
@@ -20,8 +32,8 @@ var _blink := 0.0
 func _init() -> void:
 	theme = UITheme.get_theme()
 	_box = GridContainer.new()
-	_box.add_theme_constant_override("v_separation", 4)
-	_box.add_theme_constant_override("h_separation", 28)
+	_box.add_theme_constant_override("v_separation", ROW_SEPARATION)
+	_box.add_theme_constant_override("h_separation", COLUMN_SEPARATION)
 	add_child(_box)
 
 
@@ -35,7 +47,7 @@ func set_items(new_items: Array, start_index: int = 0) -> void:
 	_labels.clear()
 	for item in items:
 		var l := Label.new()
-		l.add_theme_font_size_override("font_size", 22)
+		l.add_theme_font_size_override("font_size", UITheme.FONT_BODY)
 		_box.add_child(l)
 		_labels.append(l)
 	index = clampi(start_index, 0, max(items.size() - 1, 0))
@@ -63,7 +75,7 @@ func _refresh() -> void:
 		_labels[i].text = prefix + item.text + ("   " + right if right != "" else "")
 		var col := UITheme.TEXT if enabled else UITheme.DIM
 		if i == index and active:
-			col = UITheme.GOLD if enabled else UITheme.DIM.lightened(0.2)
+			col = UITheme.GOLD if enabled else UITheme.DIM.lightened(DISABLED_HIGHLIGHT_LIGHTEN)
 		_labels[i].add_theme_color_override("font_color", col)
 
 
@@ -71,7 +83,7 @@ func _process(delta: float) -> void:
 	if not active or _labels.is_empty():
 		return
 	_blink += delta
-	_labels[index].modulate.a = 0.75 + 0.25 * sin(_blink * 8.0)
+	_labels[index].modulate.a = CURSOR_BLINK_BASE_ALPHA + CURSOR_BLINK_DEPTH * sin(_blink * CURSOR_BLINK_SPEED)
 
 
 func _unhandled_input(event: InputEvent) -> void:

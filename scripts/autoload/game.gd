@@ -3,9 +3,16 @@ extends Node
 
 signal gold_changed(amount: int)
 
+# New-game defaults
+const STARTING_GOLD := 50
+const STARTING_INVENTORY := {"potion": 3, "ether": 1, "feather": 1}
+
+## Analog stick deadzone for every bound action.
+const INPUT_DEADZONE := 0.3
+
 var party: Array[Combatant] = []
-var inventory := {"potion": 3, "ether": 1, "feather": 1}
-var gold: int = 50
+var inventory := STARTING_INVENTORY.duplicate()
+var gold: int = STARTING_GOLD
 var flags := {}
 var steps_since_battle: int = 0
 
@@ -19,8 +26,8 @@ func new_game() -> void:
 	party.clear()
 	for id in ["aren", "lyra", "kit"]:
 		party.append(BattleData.make_party_member(id))
-	inventory = {"potion": 3, "ether": 1, "feather": 1}
-	gold = 50
+	inventory = STARTING_INVENTORY.duplicate()
+	gold = STARTING_GOLD
 	flags.clear()
 	steps_since_battle = 0
 
@@ -82,7 +89,7 @@ func _setup_input() -> void:
 
 func _bind(action: String, keys: Array, buttons: Array) -> void:
 	if not InputMap.has_action(action):
-		InputMap.add_action(action, 0.3)
+		InputMap.add_action(action, INPUT_DEADZONE)
 	for key in keys:
 		var ev := InputEventKey.new()
 		ev.physical_keycode = key
