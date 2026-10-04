@@ -59,3 +59,13 @@ func _physics_process(_delta: float) -> void:
 func facing_vector3() -> Vector3:
 	var f := sprite.facing_vector()
 	return Vector3(f.x, 0, f.y)
+
+
+func face_towards(p: Vector3) -> void:
+	var d := p - global_position
+	sprite.face_vector(Vector2(d.x, d.z))
+
+
+func stop() -> void:
+	controls_enabled = false
+	sprite.walking = false

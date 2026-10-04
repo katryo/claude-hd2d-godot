@@ -73,7 +73,7 @@ func _run() -> void:
 	var field = main.field
 	field.player.global_position = MapData.cell_center(ELDER_CELL)
 	field.player.sprite.face_vector(Vector2.UP)
-	field.camera.snap()
+	field.view.reactivate_camera()
 	await _frames(FACE_SETTLE_FRAMES)
 	await _press("accept")
 	await create_timer(DIALOGUE_OPEN_SEC).timeout
@@ -85,14 +85,14 @@ func _run() -> void:
 	for i in DIALOGUE_SKIP_PRESSES:
 		await _press("accept")
 		await _frames(DIALOGUE_SKIP_GAP_FRAMES)
-	field._start_battle(["king_slime"], true)
+	field.request_battle(["king_slime"], true)
 	await create_timer(BATTLE_INTRO_SEC).timeout
 	var battle = main.battle
-	while not battle.ui.command_menu.active:
+	while not battle.view.ui.command_menu.active:
 		await process_frame
-	var actor = battle._choosing_for
+	var actor = battle.player_input.actor
 	actor.bp = CAPTURE_BP
-	battle.enemies[0].shield = ONE_HIT_SHIELD
+	battle.model.enemies[0].shield = ONE_HIT_SHIELD
 	actor.weapon = "sword"
 	await _press("boost_up")
 	await _press("boost_up")

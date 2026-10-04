@@ -44,8 +44,6 @@ const SUB_MENU_LEFT := 200
 const MENU_BOTTOM_OFFSET := -84
 
 # Enemy tags (shield, weaknesses, name, HP)
-## Suffixes given to duplicate enemy names ("Jelly Slime A", "Jelly Slime B", ...).
-const DUPLICATE_SUFFIXES := "ABCDEFG"
 const TAG_SEPARATION := 2
 const TAG_TOP_SEPARATION := 6
 const SHIELD_BG_COLOR := Color(0.25, 0.3, 0.45, 0.9)
@@ -72,7 +70,8 @@ const TAG_HEAD_CLEARANCE := 0.2
 var party: Array[Combatant] = []
 var enemies: Array[Combatant] = []
 var camera: Camera3D
-var actor_nodes := {}
+## Callable(Combatant) -> Vector3 giving a combatant's world position (for enemy tags).
+var position_of: Callable
 
 var command_menu: SelectMenu
 var sub_menu: SelectMenu
@@ -95,11 +94,11 @@ func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 
-func setup(p_party: Array[Combatant], p_enemies: Array[Combatant], p_camera: Camera3D, nodes: Dictionary) -> void:
+func setup(p_party: Array[Combatant], p_enemies: Array[Combatant], p_camera: Camera3D, p_position_of: Callable) -> void:
 	party = p_party
 	enemies = p_enemies
 	camera = p_camera
-	actor_nodes = nodes
+	position_of = p_position_of
 	_build_message()
 	_build_turn_order()
 	_build_party_panel()
@@ -219,14 +218,7 @@ func _build_menus() -> void:
 
 
 func _build_enemy_tags() -> void:
-	var counts := {}
 	for e in enemies:
-		counts[e.display_name] = counts.get(e.display_name, 0) + 1
-	var seen := {}
-	for e in enemies:
-		if counts[e.display_name] > 1:
-			seen[e.display_name] = seen.get(e.display_name, 0) + 1
-			e.display_name += " " + DUPLICATE_SUFFIXES[seen[e.display_name] - 1]
 		var tag := VBoxContainer.new()
 		tag.add_theme_constant_override("separation", TAG_SEPARATION)
 		tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -320,13 +312,10 @@ func refresh() -> void:
 
 
 func _process(_delta: float) -> void:
-	if not camera:
+	if not camera or not position_of.is_valid():
 		return
 	for e in _enemy_tags:
-		var node: Node3D = actor_nodes.get(e)
-		if not node:
-			continue
-		var top := node.global_position + Vector3(0, TAG_SPRITE_HEIGHT * e.sprite_scale + TAG_HEAD_CLEARANCE, 0)
+		var top: Vector3 = position_of.call(e) + Vector3(0, TAG_SPRITE_HEIGHT * e.sprite_scale + TAG_HEAD_CLEARANCE, 0)
 		var screen := camera.unproject_position(top)
 		var tag: Control = _enemy_tags[e].root
 		tag.position = screen - Vector2(tag.size.x * 0.5, tag.size.y)
@@ -409,10 +398,11 @@ func choose_skill(actor: Combatant) -> String:
 	return await _sub_choose(items)
 
 
-func choose_item() -> String:
+## `bag` needs an `inventory` Dictionary of item id -> count.
+func choose_item(bag: Object) -> String:
 	var items := []
-	for id in Game.inventory:
-		var count: int = Game.inventory[id]
+	for id in bag.inventory:
+		var count: int = bag.inventory[id]
 		if count <= 0:
 			continue
 		var d: Dictionary = BattleData.ITEMS[id]
