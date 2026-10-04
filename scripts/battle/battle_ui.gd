@@ -3,6 +3,72 @@ extends Control
 ## HUD for battles: party status with BP pips, command menus, turn order and the
 ## shield/weakness readouts that float above each enemy.
 
+# Message banner (top centre)
+const MESSAGE_HALF_WIDTH := 300
+const MESSAGE_TOP := 70
+
+# Help line (bottom left)
+const HELP_LEFT := 24
+const HELP_RIGHT := 560
+const HELP_TOP := -66
+const HELP_BOTTOM := -20
+
+# Turn order strip (top left)
+const TURN_PANEL_ALPHA := 0.7
+const TURN_PANEL_MARGIN_Y := 6
+const TURN_PANEL_POS := Vector2(20, 14)
+const TURN_SEPARATION := 12
+## Opacity of names in the turn strip once they have acted.
+const TURN_DONE_ALPHA := 0.35
+const TURN_ENEMY_COLOR := Color(1.0, 0.6, 0.6)
+const TURN_ALLY_COLOR := Color(0.7, 0.85, 1.0)
+
+# Party status panel (bottom right)
+const PARTY_PANEL_LEFT := -560
+const PARTY_PANEL_RIGHT := -20
+const PARTY_PANEL_TOP := -190
+const PARTY_PANEL_BOTTOM := -20
+const PARTY_ROW_SEPARATION := 6
+const PARTY_COLUMN_SEPARATION := 14
+const NAME_COLUMN_SIZE := Vector2(70, 0)
+const HP_COLUMN_SIZE := Vector2(150, 0)
+const SP_COLUMN_SIZE := Vector2(100, 0)
+const STAT_BAR_HEIGHT := 6
+const DEAD_NAME_COLOR := Color(0.8, 0.3, 0.3)
+## How much the BP pips brighten while a boost is being previewed.
+const BP_PREVIEW_LIGHTEN := 0.35
+
+# Command menus (bottom left)
+const COMMAND_MENU_LEFT := 24
+const SUB_MENU_LEFT := 200
+const MENU_BOTTOM_OFFSET := -84
+
+# Enemy tags (shield, weaknesses, name, HP)
+## Suffixes given to duplicate enemy names ("Jelly Slime A", "Jelly Slime B", ...).
+const DUPLICATE_SUFFIXES := "ABCDEFG"
+const TAG_SEPARATION := 2
+const TAG_TOP_SEPARATION := 6
+const SHIELD_BG_COLOR := Color(0.25, 0.3, 0.45, 0.9)
+const SHIELD_BORDER_COLOR := Color(0.8, 0.85, 1.0)
+const SHIELD_BORDER_WIDTH := 2
+const SHIELD_CORNER_RADIUS := 10
+const SHIELD_MARGIN_X := 8
+const BROKEN_SHIELD_COLOR := Color(1.0, 0.6, 0.2)
+const WEAK_SEPARATION := 2
+const WEAK_CHIP_BG := Color(0.08, 0.08, 0.14, 0.9)
+const WEAK_CHIP_HIDDEN_BORDER := Color(0.4, 0.4, 0.5)
+const WEAK_CHIP_HIDDEN_TEXT := Color(0.6, 0.6, 0.7)
+const WEAK_CHIP_BORDER_WIDTH := 1
+const WEAK_CHIP_CORNER_RADIUS := 3
+const WEAK_CHIP_MARGIN_X := 4
+const ENEMY_HP_COLOR := Color(0.9, 0.35, 0.35)
+const ENEMY_HP_BAR_WIDTH := 90
+const ENEMY_HP_BAR_HEIGHT := 4
+## Tag anchor height above an enemy's origin, per unit of sprite scale.
+const TAG_SPRITE_HEIGHT := 1.55
+## Extra gap between the top of the sprite and the tag.
+const TAG_HEAD_CLEARANCE := 0.2
+
 var party: Array[Combatant] = []
 var enemies: Array[Combatant] = []
 var camera: Camera3D
@@ -50,12 +116,12 @@ func _build_message() -> void:
 	_message_panel = PanelContainer.new()
 	_message_panel.anchor_left = 0.5
 	_message_panel.anchor_right = 0.5
-	_message_panel.offset_left = -300
-	_message_panel.offset_right = 300
-	_message_panel.offset_top = 70
+	_message_panel.offset_left = -MESSAGE_HALF_WIDTH
+	_message_panel.offset_right = MESSAGE_HALF_WIDTH
+	_message_panel.offset_top = MESSAGE_TOP
 	_message_panel.visible = false
 	add_child(_message_panel)
-	_message = UITheme.label("", 26)
+	_message = UITheme.label("", UITheme.FONT_MESSAGE)
 	_message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_message_panel.add_child(_message)
 
@@ -64,26 +130,26 @@ func _build_message() -> void:
 	_help_panel.anchor_right = 0.0
 	_help_panel.anchor_top = 1.0
 	_help_panel.anchor_bottom = 1.0
-	_help_panel.offset_left = 24
-	_help_panel.offset_right = 560
-	_help_panel.offset_top = -66
-	_help_panel.offset_bottom = -20
+	_help_panel.offset_left = HELP_LEFT
+	_help_panel.offset_right = HELP_RIGHT
+	_help_panel.offset_top = HELP_TOP
+	_help_panel.offset_bottom = HELP_BOTTOM
 	_help_panel.visible = false
 	add_child(_help_panel)
-	_help = UITheme.label("", 18, UITheme.TEXT)
+	_help = UITheme.label("", UITheme.FONT_SMALL, UITheme.TEXT)
 	_help_panel.add_child(_help)
 
 
 func _build_turn_order() -> void:
 	var panel := PanelContainer.new()
-	var style := UITheme.panel_style(0.7)
-	style.content_margin_top = 6
-	style.content_margin_bottom = 6
+	var style := UITheme.panel_style(TURN_PANEL_ALPHA)
+	style.content_margin_top = TURN_PANEL_MARGIN_Y
+	style.content_margin_bottom = TURN_PANEL_MARGIN_Y
 	panel.add_theme_stylebox_override("panel", style)
-	panel.position = Vector2(20, 14)
+	panel.position = TURN_PANEL_POS
 	add_child(panel)
 	_turn_box = HBoxContainer.new()
-	_turn_box.add_theme_constant_override("separation", 12)
+	_turn_box.add_theme_constant_override("separation", TURN_SEPARATION)
 	panel.add_child(_turn_box)
 
 
@@ -93,38 +159,38 @@ func _build_party_panel() -> void:
 	panel.anchor_right = 1.0
 	panel.anchor_top = 1.0
 	panel.anchor_bottom = 1.0
-	panel.offset_left = -560
-	panel.offset_right = -20
-	panel.offset_top = -190
-	panel.offset_bottom = -20
+	panel.offset_left = PARTY_PANEL_LEFT
+	panel.offset_right = PARTY_PANEL_RIGHT
+	panel.offset_top = PARTY_PANEL_TOP
+	panel.offset_bottom = PARTY_PANEL_BOTTOM
 	add_child(panel)
 	var vb := VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 6)
+	vb.add_theme_constant_override("separation", PARTY_ROW_SEPARATION)
 	panel.add_child(vb)
 	for m in party:
 		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 14)
-		var name_l := UITheme.label(m.display_name, 22)
-		name_l.custom_minimum_size = Vector2(70, 0)
+		row.add_theme_constant_override("separation", PARTY_COLUMN_SEPARATION)
+		var name_l := UITheme.label(m.display_name, UITheme.FONT_BODY)
+		name_l.custom_minimum_size = NAME_COLUMN_SIZE
 		row.add_child(name_l)
 		var hp_box := VBoxContainer.new()
 		hp_box.add_theme_constant_override("separation", 0)
-		hp_box.custom_minimum_size = Vector2(150, 0)
-		var hp_l := UITheme.label("", 18, UITheme.TEXT)
+		hp_box.custom_minimum_size = HP_COLUMN_SIZE
+		var hp_l := UITheme.label("", UITheme.FONT_SMALL, UITheme.TEXT)
 		hp_box.add_child(hp_l)
-		var hp_bar := UITheme.make_bar(UITheme.HP_COLOR, 6)
+		var hp_bar := UITheme.make_bar(UITheme.HP_COLOR, STAT_BAR_HEIGHT)
 		hp_box.add_child(hp_bar)
 		row.add_child(hp_box)
 		var sp_box := VBoxContainer.new()
 		sp_box.add_theme_constant_override("separation", 0)
-		sp_box.custom_minimum_size = Vector2(100, 0)
-		var sp_l := UITheme.label("", 18, UITheme.TEXT)
+		sp_box.custom_minimum_size = SP_COLUMN_SIZE
+		var sp_l := UITheme.label("", UITheme.FONT_SMALL, UITheme.TEXT)
 		sp_box.add_child(sp_l)
-		var sp_bar := UITheme.make_bar(UITheme.SP_COLOR, 6)
+		var sp_bar := UITheme.make_bar(UITheme.SP_COLOR, STAT_BAR_HEIGHT)
 		sp_box.add_child(sp_bar)
 		row.add_child(sp_box)
 		var bp_l := Label.new()
-		bp_l.add_theme_font_size_override("font_size", 22)
+		bp_l.add_theme_font_size_override("font_size", UITheme.FONT_BODY)
 		row.add_child(bp_l)
 		vb.add_child(row)
 		_party_rows[m] = {"name": name_l, "hp": hp_l, "hp_bar": hp_bar, "sp": sp_l, "sp_bar": sp_bar, "bp": bp_l}
@@ -134,9 +200,9 @@ func _build_menus() -> void:
 	command_menu = SelectMenu.new()
 	command_menu.anchor_top = 1.0
 	command_menu.anchor_bottom = 1.0
-	command_menu.offset_left = 24
-	command_menu.offset_top = -84
-	command_menu.offset_bottom = -84
+	command_menu.offset_left = COMMAND_MENU_LEFT
+	command_menu.offset_top = MENU_BOTTOM_OFFSET
+	command_menu.offset_bottom = MENU_BOTTOM_OFFSET
 	command_menu.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	command_menu.visible = false
 	command_menu.cancellable = false
@@ -144,9 +210,9 @@ func _build_menus() -> void:
 	sub_menu = SelectMenu.new()
 	sub_menu.anchor_top = 1.0
 	sub_menu.anchor_bottom = 1.0
-	sub_menu.offset_left = 200
-	sub_menu.offset_top = -84
-	sub_menu.offset_bottom = -84
+	sub_menu.offset_left = SUB_MENU_LEFT
+	sub_menu.offset_top = MENU_BOTTOM_OFFSET
+	sub_menu.offset_bottom = MENU_BOTTOM_OFFSET
 	sub_menu.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	sub_menu.visible = false
 	add_child(sub_menu)
@@ -160,35 +226,35 @@ func _build_enemy_tags() -> void:
 	for e in enemies:
 		if counts[e.display_name] > 1:
 			seen[e.display_name] = seen.get(e.display_name, 0) + 1
-			e.display_name += " " + "ABCDEFG"[seen[e.display_name] - 1]
+			e.display_name += " " + DUPLICATE_SUFFIXES[seen[e.display_name] - 1]
 		var tag := VBoxContainer.new()
-		tag.add_theme_constant_override("separation", 2)
+		tag.add_theme_constant_override("separation", TAG_SEPARATION)
 		tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var top := HBoxContainer.new()
-		top.add_theme_constant_override("separation", 6)
+		top.add_theme_constant_override("separation", TAG_TOP_SEPARATION)
 		top.alignment = BoxContainer.ALIGNMENT_CENTER
 		var shield := Label.new()
-		shield.add_theme_font_size_override("font_size", 22)
+		shield.add_theme_font_size_override("font_size", UITheme.FONT_BODY)
 		var shield_bg := PanelContainer.new()
 		var sb := StyleBoxFlat.new()
-		sb.bg_color = Color(0.25, 0.3, 0.45, 0.9)
-		sb.border_color = Color(0.8, 0.85, 1.0)
-		sb.set_border_width_all(2)
-		sb.set_corner_radius_all(10)
-		sb.content_margin_left = 8
-		sb.content_margin_right = 8
+		sb.bg_color = SHIELD_BG_COLOR
+		sb.border_color = SHIELD_BORDER_COLOR
+		sb.set_border_width_all(SHIELD_BORDER_WIDTH)
+		sb.set_corner_radius_all(SHIELD_CORNER_RADIUS)
+		sb.content_margin_left = SHIELD_MARGIN_X
+		sb.content_margin_right = SHIELD_MARGIN_X
 		shield_bg.add_theme_stylebox_override("panel", sb)
 		shield_bg.add_child(shield)
 		top.add_child(shield_bg)
 		var weak_box := HBoxContainer.new()
-		weak_box.add_theme_constant_override("separation", 2)
+		weak_box.add_theme_constant_override("separation", WEAK_SEPARATION)
 		top.add_child(weak_box)
 		tag.add_child(top)
-		var name_l := UITheme.label(e.display_name, 16, UITheme.TEXT)
+		var name_l := UITheme.label(e.display_name, UITheme.FONT_XSMALL, UITheme.TEXT)
 		name_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		tag.add_child(name_l)
-		var hp_bar := UITheme.make_bar(Color(0.9, 0.35, 0.35), 4)
-		hp_bar.custom_minimum_size = Vector2(90, 4)
+		var hp_bar := UITheme.make_bar(ENEMY_HP_COLOR, ENEMY_HP_BAR_HEIGHT)
+		hp_bar.custom_minimum_size = Vector2(ENEMY_HP_BAR_WIDTH, ENEMY_HP_BAR_HEIGHT)
 		hp_bar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		tag.add_child(hp_bar)
 		add_child(tag)
@@ -211,7 +277,7 @@ func refresh() -> void:
 		row.sp_bar.value = m.sp
 		var name_color := UITheme.TEXT
 		if not m.is_alive():
-			name_color = Color(0.8, 0.3, 0.3)
+			name_color = DEAD_NAME_COLOR
 		elif m == _active:
 			name_color = UITheme.GOLD
 		row.name.add_theme_color_override("font_color", name_color)
@@ -220,14 +286,14 @@ func refresh() -> void:
 		for i in Combatant.MAX_BP:
 			pips += "●" if i < m.bp else "○"
 		row.bp.text = pips
-		row.bp.add_theme_color_override("font_color", UITheme.BP_COLOR.lightened(0.35) if spend > 0 else UITheme.BP_COLOR)
+		row.bp.add_theme_color_override("font_color", UITheme.BP_COLOR.lightened(BP_PREVIEW_LIGHTEN) if spend > 0 else UITheme.BP_COLOR)
 		if spend > 0:
 			row.bp.text = pips.substr(0, m.bp - spend) + "◆".repeat(spend) + pips.substr(m.bp)
 	for e in _enemy_tags:
 		var tag: Dictionary = _enemy_tags[e]
 		tag.root.visible = e.is_alive()
 		tag.shield.text = "BREAK" if e.is_broken() else "%d" % e.shield
-		tag.shield.add_theme_color_override("font_color", Color(1.0, 0.6, 0.2) if e.is_broken() else Color.WHITE)
+		tag.shield.add_theme_color_override("font_color", BROKEN_SHIELD_COLOR if e.is_broken() else Color.WHITE)
 		tag.hp.max_value = e.max_hp
 		tag.hp.value = e.hp
 		for child in tag.weak.get_children():
@@ -238,17 +304,17 @@ func refresh() -> void:
 			var info: Dictionary = BattleData.ELEMENT_INFO[el]
 			var box := PanelContainer.new()
 			var sb := StyleBoxFlat.new()
-			sb.bg_color = Color(0.08, 0.08, 0.14, 0.9)
-			sb.border_color = info.color if revealed else Color(0.4, 0.4, 0.5)
-			sb.set_border_width_all(1)
-			sb.set_corner_radius_all(3)
-			sb.content_margin_left = 4
-			sb.content_margin_right = 4
+			sb.bg_color = WEAK_CHIP_BG
+			sb.border_color = info.color if revealed else WEAK_CHIP_HIDDEN_BORDER
+			sb.set_border_width_all(WEAK_CHIP_BORDER_WIDTH)
+			sb.set_corner_radius_all(WEAK_CHIP_CORNER_RADIUS)
+			sb.content_margin_left = WEAK_CHIP_MARGIN_X
+			sb.content_margin_right = WEAK_CHIP_MARGIN_X
 			box.add_theme_stylebox_override("panel", sb)
 			var l := Label.new()
 			l.text = info.label if revealed else " ? "
-			l.add_theme_font_size_override("font_size", 14)
-			l.add_theme_color_override("font_color", info.color if revealed else Color(0.6, 0.6, 0.7))
+			l.add_theme_font_size_override("font_size", UITheme.FONT_TINY)
+			l.add_theme_color_override("font_color", info.color if revealed else WEAK_CHIP_HIDDEN_TEXT)
 			box.add_child(l)
 			tag.weak.add_child(box)
 
@@ -260,7 +326,7 @@ func _process(_delta: float) -> void:
 		var node: Node3D = actor_nodes.get(e)
 		if not node:
 			continue
-		var top := node.global_position + Vector3(0, 1.55 * e.sprite_scale + 0.2, 0)
+		var top := node.global_position + Vector3(0, TAG_SPRITE_HEIGHT * e.sprite_scale + TAG_HEAD_CLEARANCE, 0)
 		var screen := camera.unproject_position(top)
 		var tag: Control = _enemy_tags[e].root
 		tag.position = screen - Vector2(tag.size.x * 0.5, tag.size.y)
@@ -281,9 +347,9 @@ func set_turn_order(order: Array) -> void:
 	for child in _turn_box.get_children():
 		_turn_box.remove_child(child)
 		child.queue_free()
-	_turn_box.add_child(UITheme.label("Turn:", 18, UITheme.GOLD))
+	_turn_box.add_child(UITheme.label("Turn:", UITheme.FONT_SMALL, UITheme.GOLD))
 	for c in order:
-		var l := UITheme.label(c.display_name, 18, Color(1.0, 0.6, 0.6) if c.is_enemy else Color(0.7, 0.85, 1.0))
+		var l := UITheme.label(c.display_name, UITheme.FONT_SMALL, TURN_ENEMY_COLOR if c.is_enemy else TURN_ALLY_COLOR)
 		_turn_box.add_child(l)
 
 
@@ -291,7 +357,7 @@ func mark_turn_done(index: int) -> void:
 	# index 0 is the "Turn:" caption.
 	var child := _turn_box.get_child(index + 1) as Label
 	if child:
-		child.modulate.a = 0.35
+		child.modulate.a = TURN_DONE_ALPHA
 
 
 func show_message(text: String) -> void:
