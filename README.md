@@ -54,24 +54,67 @@ The project uses the **Forward+** renderer for depth of field, SSAO and glow.
 | Flickering lamps, glowing windows, chimney smoke, floating motes | `world_builder.gd`, `visuals.gd` |
 | Procedural pixel art (characters, monsters, trees, tiles) | `scripts/gfx/sprite_factory.gd`, `texture_factory.gd` |
 
+## Architecture
+
+The code is split into layers. Dependencies only point downward:
+
+| Layer | Folder | What it holds |
+|---|---|---|
+| Data | `scripts/data/` | Static content: skills, items, enemies, map, NPC dialogue, shop stock |
+| Logic | `scripts/logic/` | Game rules. It never touches nodes, tweens, colours or the `Game` global |
+| View | `scripts/view/` | Everything you see: stage, sprites, effects, HUD and world building |
+| Game | `scripts/game/` | Presenters that connect logic to view, and the entities (player, NPCs, boss) |
+| Core | `scripts/core/` | `StateMachine` / `State` and the input bindings |
+
+Patterns used:
+
+- **State machines** (`StateMachine` + `State` in `scripts/core/`):
+  - **Game flow** (`game/flow/flow_states.gd`): title → explore ⇄ battle.
+  - **Field modes** (`game/field/field_states.gd`): suspended / explore / interact / status.
+  - **Battle turns** (`game/battle/battle_states.gd`): intro → round_start → turn_start →
+    choose_action → resolve_action → round_end → outcome → victory | defeat → finished.
+  - **Wandering NPCs** (`game/field/npc.gd`): wait ⇄ walk.
+- **Model / View / Presenter.** In battle, `BattleModel` + `BattleRules` are the logic,
+  `BattleView` is the visuals, and `Battle` is the presenter. Actions return `BattleEvent`s
+  that the view replays as animations, so rules never wait on tweens and visuals never
+  decide outcomes. The field works the same way: `Field`, `FieldView`, `EncounterTracker`
+  and `Shop`.
+- **Command.** Each battle action is an object with `execute(model)`: `AttackAction`,
+  `SkillAction`, `ItemAction`, `DefendAction` and `FleeAction`.
+- **Strategy.** `BattleController` decides who acts and how: `PlayerBattleInput` (menus and
+  cursor), `EnemyAI`, or `AutoPartyController` (autoplay). Interactions are strategies too:
+  NPCs, signs, chests and the boss each implement `Interaction.run()`.
+- **Data-driven dialogue.** NPC conversations, the inn and the shop are described in
+  `StoryData.NPC_DIALOGUE` rather than hard-coded.
+
 ## Project layout
 
 ```
-scenes/main.tscn            Entry scene (game flow lives in scripts/main.gd)
+scenes/main.tscn            Entry scene (scripts/game/flow/main.gd)
 scripts/
-  main.gd                   Title screen, field <-> battle transitions, dev flags
-  autoload/game.gd          Party, inventory, gold, story flags, input map ("Game" autoload)
-  world/                    Map data (ASCII), world builder, field, player, NPCs, camera
-  battle/                   Combatant stats, game data, battle logic, battle HUD
-  gfx/                      Pixel canvas, sprite and texture generators, lighting presets
-  ui/                       Theme, dialogue box, list menus, banners
+  core/                     StateMachine, State, input bindings
+  data/                     battle_data, map_data (ASCII world), story_data (dialogue, shop)
+  autoload/game.gd          Party, inventory, gold and story flags ("Game" autoload)
+  logic/
+    combatant.gd            Stats, Break shield, BP, levelling
+    battle/                 BattleModel, BattleRules, BattleEvent, actions/, controllers/
+    field/                  EncounterTracker, Shop, InteractionFinder
+  view/
+    battle/                 BattleView, BattleStage, BattleActorView, BattleEffects, TargetCursor, BattleUI
+    world/                  FieldView, WorldBuilder, CharacterSprite, FollowCamera, lamps, talk bubble
+    gfx/                    Pixel canvas, sprite and texture generators, lighting presets
+    ui/                     Theme, dialogue box, menus, banners, HUD, status panel, title, transitions
+  game/
+    flow/                   Main + flow states
+    battle/                 Battle presenter, battle states, PlayerBattleInput
+    field/                  Field presenter, field states, Player, NPC, BossEntity, interactions/
 shaders/                    Billboard, water, vignette and transition shaders
-tests/                      Headless smoke test and screenshot capture scripts
+tests/                      Logic tests, headless smoke test, screenshot capture
 ```
 
-The overworld is authored as ASCII in `scripts/world/map_data.gd`. Edit the grid to reshape
+The overworld is authored as ASCII in `scripts/data/map_data.gd`. Edit the grid to reshape
 the world: rectangles of `h` become houses, `d` puts a door on the house above it, and so on
-(the legend is at the top of the file).
+(the legend is at the top of the file). NPC lines live in `scripts/data/story_data.gd`.
 
 ## Developer flags and tests
 
@@ -83,6 +126,13 @@ godot --path . -- --battle                # jump into a random battle
 godot --path . -- --boss --autobattle     # watch the party fight the boss on its own
 godot --path . -- --at=20,8               # start on a given map cell (x, row)
 godot --path . -- --skip-title --shot=out.png --shot-delay=4   # save a screenshot, then quit
+```
+
+Pure logic tests. They need no scene or renderer and finish in under a second. They cover the
+damage rules, Break & Boost, the actions and 140 simulated AI-vs-AI battles:
+
+```sh
+godot --headless --path . -s tests/logic_test.gd
 ```
 
 Headless smoke test. It drives exploration, dialogue, the shop, the inn, chests, the status menu,

@@ -166,7 +166,7 @@ func _run() -> void:
 	await _finish_dialogue(field)
 	_check(game.inventory["potion"] == potions + 1, "bought a potion")
 	_check(game.gold == gold - POTION_PRICE, "paid 20 G")
-	_check(not field.busy and field.player.controls_enabled, "shop closes cleanly")
+	_check(field.machine.is_in(&"explore") and field.player.controls_enabled, "shop closes cleanly")
 
 	# Rest at the inn.
 	game.party[0].hp = INN_TEST_HP
@@ -192,14 +192,14 @@ func _run() -> void:
 
 	# Status menu toggles.
 	await _press("menu")
-	_check(field.status_panel.visible, "status menu opens")
+	_check(field.view.status_panel.visible, "status menu opens")
 	await _press("cancel")
-	_check(not field.status_panel.visible and field.player.controls_enabled, "status menu closes")
+	_check(not field.view.status_panel.visible and field.player.controls_enabled, "status menu closes")
 
 	# Random encounter in tall grass leads to a battle.
 	main.autobattle = true
 	field.player.global_position = MapData.cell_center(GRASS_CELL)
-	field._encounter_meter = ENCOUNTER_METER_FULL
+	field.encounters.meter = ENCOUNTER_METER_FULL
 	field._on_player_moved(ENCOUNTER_STEP_DELTA)
 	await _frames(BATTLE_START_FRAMES)
 	_check(main.battle != null, "encounter starts a battle")
@@ -220,7 +220,7 @@ func _wait_for_menu(battle) -> bool:
 	for i in MENU_TIMEOUT_FRAMES:
 		if battle == null or not is_instance_valid(battle):
 			return false
-		if battle.ui.command_menu.active:
+		if battle.view.ui.command_menu.active:
 			await _frames(MENU_SETTLE_FRAMES)
 			return true
 		await process_frame
@@ -234,7 +234,7 @@ func _menu_to(menu, target_index: int) -> void:
 
 func _enemy_hp(battle) -> int:
 	var total := 0
-	for e in battle.enemies:
+	for e in battle.model.enemies:
 		total += e.hp
 	return total
 
@@ -243,7 +243,7 @@ func _enemy_hp(battle) -> int:
 func _manual_battle(field, game) -> void:
 	main.autobattle = false
 	game.heal_party()
-	field._start_battle(["king_slime"], true)
+	field.request_battle(["king_slime"], true)
 	await _frames(BATTLE_START_FRAMES)
 	var battle = main.battle
 	_check(battle != null, "boss battle starts")
@@ -251,29 +251,29 @@ func _manual_battle(field, game) -> void:
 		return
 
 	_check(await _wait_for_menu(battle), "command menu appears")
-	var actor = battle._choosing_for
+	var actor = battle.player_input.actor
 	actor.bp = TEST_BP
 	await _press("boost_up")
 	await _press("boost_up")
-	_check(battle.boost_level == EXPECTED_BOOST_AFTER_UP, "E raises boost level")
+	_check(battle.player_input.boost_level == EXPECTED_BOOST_AFTER_UP, "E raises boost level")
 	await _press("boost_down")
-	_check(battle.boost_level == EXPECTED_BOOST_AFTER_DOWN, "Q lowers boost level")
+	_check(battle.player_input.boost_level == EXPECTED_BOOST_AFTER_DOWN, "Q lowers boost level")
 	var hp_before := _enemy_hp(battle)
 	await _press("accept")  # Attack
 	await _frames(MENU_STEP_FRAMES)
-	_check(battle._cursor.visible, "target cursor shows")
+	_check(battle.view.cursor.visible, "target cursor shows")
 	await _press("accept")
 	await _frames(ATTACK_RESOLVE_FRAMES)
 	_check(_enemy_hp(battle) < hp_before, "boosted attack damages the boss")
 	_check(actor.bp == EXPECTED_BP_AFTER_BOOST, "boost spent 1 BP")
 
 	_check(await _wait_for_menu(battle), "next command menu appears")
-	actor = battle._choosing_for
+	actor = battle.player_input.actor
 	var sp_before: int = actor.sp
-	await _menu_to(battle.ui.command_menu, CMD_SKILLS)  # Skills
+	await _menu_to(battle.view.ui.command_menu, CMD_SKILLS)  # Skills
 	await _press("accept")
 	await _frames(MENU_STEP_FRAMES)
-	_check(battle.ui.sub_menu.active, "skill list opens")
+	_check(battle.view.ui.sub_menu.active, "skill list opens")
 	await _press("accept")  # first skill
 	await _frames(MENU_STEP_FRAMES)
 	await _press("accept")  # confirm target(s)
@@ -287,7 +287,7 @@ func _manual_battle(field, game) -> void:
 			item_id = id
 			break
 	var count_before: int = game.inventory[item_id]
-	await _menu_to(battle.ui.command_menu, CMD_ITEMS)  # Items
+	await _menu_to(battle.view.ui.command_menu, CMD_ITEMS)  # Items
 	await _press("accept")
 	await _frames(MENU_STEP_FRAMES)
 	# Move the cursor to the chosen item.
@@ -308,7 +308,7 @@ func _manual_battle(field, game) -> void:
 
 	battle.autoplay = true
 	if await _wait_for_menu(battle):
-		await _menu_to(battle.ui.command_menu, CMD_DEFEND)  # Defend
+		await _menu_to(battle.view.ui.command_menu, CMD_DEFEND)  # Defend
 		await _press("accept")
 	for i in BOSS_TIMEOUT_FRAMES:
 		await process_frame
